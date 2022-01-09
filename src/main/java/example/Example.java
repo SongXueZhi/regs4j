@@ -14,7 +14,6 @@ import utils.FileUtilx;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class Example {
@@ -22,7 +21,7 @@ public class Example {
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
     static Reducer reducer = new Reducer();
     static Migrator migrator = new Migrator();
-    static Runner runner =new Runner();
+    static Runner runner = new Runner();
 
     public static void main(String[] args) {
         Set<String> projectFullNameList = FileUtilx.readSetFromFile("projects.txt");
@@ -60,32 +59,32 @@ public class Example {
             List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{buggy, ric, work});
 
             //
-            migrateTestAndDependency(rfc,needToTestMigrateRevisionList,regression.getTestCase());
+            migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
 
             //testWithJacoco
-            List<CoverNode> rfcCoveredMethodList = runner.runTestWithJacoco(rfcDir,regression.getTestCase());
-            System.out.println(rfcCoveredMethodList.size());
+            List<CoverNode> rfcCoveredMethodList = runner.runTestWithJacoco(rfcDir, regression.getTestCase());
+            System.out.println("rfc coverage node size:" + rfcCoveredMethodList.size());
 
-            List<CoverNode> buggyCoveredMethodList = runner.runTestWithJacoco(buggyDir,regression.getTestCase());
-            System.out.println(buggyCoveredMethodList.size());
+            List<CoverNode> buggyCoveredMethodList = runner.runTestWithJacoco(buggyDir, regression.getTestCase());
+            System.out.println("buggy coverage node size:" + buggyCoveredMethodList.size());
 
-            List<CoverNode> ricCoveredMethodList = runner.runTestWithJacoco(ricDir,regression.getTestCase());
-            System.out.println(ricCoveredMethodList.size());
+            List<CoverNode> ricCoveredMethodList = runner.runTestWithJacoco(ricDir, regression.getTestCase());
+            System.out.println("ric coverage node size:" + ricCoveredMethodList.size());
 
-            List<CoverNode> workCoveredMethodList = runner.runTestWithJacoco(workDir,regression.getTestCase());
-            System.out.println(workCoveredMethodList.size());
+            List<CoverNode> workCoveredMethodList = runner.runTestWithJacoco(workDir, regression.getTestCase());
+            System.out.println("work coverage node size:" + workCoveredMethodList.size());
 
             //TODO Siang Hwee
             System.out.println("Please compare coverage node similarity here");
         }
     }
 
-     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
+    static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
 
         migrator.equipRfcWithChangeInfo(rfc);
-        reducer.reduceTestCases(rfc,testCase);
+        reducer.reduceTestCases(rfc, testCase);
         needToTestMigrateRevisionList.forEach(revision -> {
-            migrator.migrateTestFromTo_0(rfc,revision);
+            migrator.migrateTestFromTo_0(rfc, revision);
         });
     }
 
