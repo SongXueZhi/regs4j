@@ -23,7 +23,9 @@ public class SourceCodeManager {
 
         File revisionDir = new File(projectCacheDir, revision.getName());
         try {
-            FileUtils.forceDelete(revisionDir);
+            if (revisionDir.exists()) {
+                FileUtils.forceDelete(revisionDir);
+            }
             FileUtils.copyDirectoryToDirectory(projectFile, projectCacheDir);
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -31,10 +33,10 @@ public class SourceCodeManager {
         }
         new File(projectCacheDir, projectDirName).renameTo(revisionDir);
         //git checkout
-        if(GitUtils.checkout(revision.getCommitID(),revisionDir)){
+        if (GitUtils.checkout(revision.getCommitID(), revisionDir)) {
             return revisionDir;
         }
-       return null;
+        return null;
     }
 
     public File getProjectDir(String projectFullName) {

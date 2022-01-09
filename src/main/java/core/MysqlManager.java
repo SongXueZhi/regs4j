@@ -104,16 +104,7 @@ public class MysqlManager {
                 regression.setBuggy(new Revision(rs.getString("buggy"), "buggy"));
                 regression.setRic(new Revision(rs.getString("bic"), "ric"));
                 regression.setWork(new Revision(rs.getString("work"), "work"));
-                Arrays.stream(rs.getString("testcase").split(";")).forEach(testcase -> {
-                    String[] testClassAndMethod = testcase.split("#");
-                    if (testClassAndMethod.length == 2) {
-                        if (regression.getTestCaseMethodMp().containsKey(testClassAndMethod[0])) {
-                            regression.getTestCaseMethodMp().get(testClassAndMethod[0]).add(testClassAndMethod[1]);
-                        } else {
-                            regression.getTestCaseMethodMp().put(testClassAndMethod[0], Arrays.asList(new String[]{testClassAndMethod[1]}));
-                        }
-                    }
-                });
+                regression.setTestCase(rs.getString("testcase").split(";")[0]);
                 regressionList.add(regression);
             }
         } catch (Exception e) {

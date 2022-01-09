@@ -1,22 +1,18 @@
 package model;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class Regression {
     Revision rfc;
     Revision buggy;
     Revision ric;
     Revision work;
-    private Map<String, List<String>> testCaseMethodMp =new HashMap<>();
+    String testCase;
 
-    public Map<String,  List<String>> getTestCaseMethodMp() {
-        return testCaseMethodMp;
+    public String getTestCase() {
+        return testCase;
     }
 
-    public void setTestCaseMethodMp(Map<String,  List<String>> testCaseMethodMp) {
-        this.testCaseMethodMp = testCaseMethodMp;
+    public void setTestCase(String testCase) {
+        this.testCase = testCase;
     }
 
     public Revision getRfc() {

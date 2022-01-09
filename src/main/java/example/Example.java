@@ -59,21 +59,31 @@ public class Example {
 
             List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{buggy, ric, work});
 
-            //migrate
-            migrateTestAndDependency(rfc,needToTestMigrateRevisionList,regression.getTestCaseMethodMp());
+            //
+            migrateTestAndDependency(rfc,needToTestMigrateRevisionList,regression.getTestCase());
 
             //testWithJacoco
-            List<CoverNode> bfcCoveredMethodList = runner.runTestWithJacoco(rfcDir,regression.getTestCaseMethodMp());
+            List<CoverNode> rfcCoveredMethodList = runner.runTestWithJacoco(rfcDir,regression.getTestCase());
+            System.out.println(rfcCoveredMethodList.size());
+
+            List<CoverNode> buggyCoveredMethodList = runner.runTestWithJacoco(buggyDir,regression.getTestCase());
+            System.out.println(buggyCoveredMethodList.size());
+
+            List<CoverNode> ricCoveredMethodList = runner.runTestWithJacoco(ricDir,regression.getTestCase());
+            System.out.println(ricCoveredMethodList.size());
+
+            List<CoverNode> workCoveredMethodList = runner.runTestWithJacoco(workDir,regression.getTestCase());
+            System.out.println(workCoveredMethodList.size());
 
             //TODO Siang Hwee
-
+            System.out.println("Please compare coverage node similarity here");
         }
     }
 
-     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, Map<String,List<String>> testCaseMap) {
+     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
 
         migrator.equipRfcWithChangeInfo(rfc);
-        reducer.reduceTestCases(rfc,testCaseMap);
+        reducer.reduceTestCases(rfc,testCase);
         needToTestMigrateRevisionList.forEach(revision -> {
             migrator.migrateTestFromTo_0(rfc,revision);
         });

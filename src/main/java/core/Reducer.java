@@ -4,39 +4,40 @@ import model.ChangedFile;
 import model.Revision;
 import model.TestFile;
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import utils.CodeUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
 
 public class Reducer {
 
-    public void reduceTestCases(Revision revision, Map<String,List<String>> testCaseMap) {
+    public void reduceTestCases(Revision revision, String testCase) {
         Iterator<ChangedFile> iterator = revision.getChangedFiles().iterator();
-        while(iterator.hasNext()) {
+        String[] testCaseInfos= testCase.split("#");
+        String testClassName = testCaseInfos[0];
+        String testMethodName =testCaseInfos[1];
+
+        while (iterator.hasNext()) {
             ChangedFile file = iterator.next();
             if (file instanceof TestFile) {
-                String testClass = judgeTestForBuggy(file.getNewPath(),testCaseMap.keySet());
-                if (testClass == null){
+                if (!file.getNewPath().contains(testClassName.replace(".","/"))) {
                     iterator.remove();
                     continue;
-                }else {
-                    reduceTestCase((TestFile) file,testCaseMap.get(testClass),revision.getLocalCodeDir());
+                } else {
+                    reduceTestCase((TestFile) file,testMethodName, revision.getLocalCodeDir());
                 }
             }
         }
     }
-    private String judgeTestForBuggy(String path,Set<String> testClassSet){
-        for (String testClass:testClassSet) {
-            if (path.contains(testClass)){
-                return testClass;
-            }
-        }
-        return null;
-    }
-    private void reduceTestCase(TestFile testFile,List<String> testMethods,File rfcDir) {
+
+
+    private void reduceTestCase(TestFile testFile,String testName, File rfcDir) {
         String path = testFile.getNewPath();
         File file = new File(rfcDir, path);
         try {
@@ -48,7 +49,7 @@ public class Reducer {
                 for (int i = 0; i < mdArray.length; i++) {
                     MethodDeclaration method = mdArray[i];
                     String name = method.getName().toString();
-                    if ((method.toString().contains("@Test") || name.startsWith("test") || name.endsWith("test")) && !testMethods.contains(name)) {
+                    if ((method.toString().contains("@Test") || name.startsWith("test") || name.endsWith("test")) && !name.contains(testName)) {
                         method.delete();
                     }
                 }

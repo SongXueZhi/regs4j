@@ -55,12 +55,12 @@ public class Migrator {
 
 
     private void addChangedFileToRfc(DiffEntry entry, Revision rfc) {
-        ChangedFile file = null;
+        ChangedFile file =null;
         String path = entry.getNewPath();
         if (path.contains("test") && path.endsWith(".java")) {
             String testCode = null;
             try {
-                testCode = FileUtils.readFileToString(new File(rfc.getLocalCodeDir(), file.getNewPath()), StandardCharsets.UTF_8);
+                testCode = FileUtils.readFileToString(new File(rfc.getLocalCodeDir(), path), StandardCharsets.UTF_8);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -75,7 +75,9 @@ public class Migrator {
         if (!path.endsWith(".java") && !path.endsWith("pom.xml") && !path.contains("gradle")) {
             file = new SourceFile(path);
         }
-        file.setOldPath(entry.getOldPath());
-        rfc.getChangedFiles().add(file);
+        if (file!=null){
+            file.setOldPath(entry.getOldPath());
+            rfc.getChangedFiles().add(file);
+        }
     }
 }

@@ -3,7 +3,6 @@ package run;
 import core.coverage.CodeCoverage;
 import core.coverage.model.CoverNode;
 import core.maven.JacocoMavenManager;
-import model.Methodx;
 
 import java.io.File;
 import java.util.List;
@@ -13,11 +12,11 @@ public class Runner {
     CodeCoverage codeCoverage = new CodeCoverage();
     JacocoMavenManager jacocoMavenManager = new JacocoMavenManager();
 
-    public List<CoverNode> runTestWithJacoco(File revDir, Map<String, List<String>> testClassMethodMap)  {
+    public List<CoverNode> runTestWithJacoco(File revDir, String testCase)  {
         List<CoverNode> coverNodeList = codeCoverage.readJacocoReports(revDir);
         if (coverNodeList == null) {
             try {
-                coverNodeList = testWithJacoco(revDir,testClassMethodMap);
+                coverNodeList = testWithJacoco(revDir,testCase);
             } catch (Exception exception) {
                 exception.printStackTrace();
             }
@@ -25,7 +24,7 @@ public class Runner {
         return coverNodeList;
     }
 
-    private List<CoverNode> testWithJacoco(File dir, Map<String,List<String>> testClassAndMethodMap) throws Exception {
+    private List<CoverNode> testWithJacoco(File dir, String testCase) throws Exception {
         //add Jacoco plugin
         try {
             jacocoMavenManager.addJacocoFeatureToMaven(dir);
@@ -33,10 +32,8 @@ public class Runner {
             e.printStackTrace();
             return null;
         }
-        for (Map.Entry<String,List<String> >entry: testClassAndMethodMap.entrySet()) {
-            String testCommand = "mvn test -Dtest="+entry.getKey()+"#"+entry.getValue();
-            new Executor().setDirectory(dir).exec(testCommand);
-        }
+        String testCommand = "mvn test -Dtest="+testCase+" "+"-Dmaven.test.failure.ignore=true";
+        new Executor().setDirectory(dir).exec(testCommand);
 
         // git test coverage methods
         return codeCoverage.readJacocoReports(dir);
