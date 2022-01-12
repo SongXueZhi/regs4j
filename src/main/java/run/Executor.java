@@ -6,8 +6,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author knightsong
@@ -43,7 +43,6 @@ public class Executor {
      * @return return result by exec command
      */
     public String exec(String cmd) {
-        Timer  t = new Timer();;
         StringBuilder builder = new StringBuilder();
         Process process = null;
         InputStreamReader inputStr = null;
@@ -56,15 +55,17 @@ public class Executor {
                 pb.command("bash", "-c", cmd);
             }
             process = pb.start();
-            t.schedule(new KillTask(process),60000); //Set timeout to kill process
-
+            boolean completed = process.waitFor(1, TimeUnit.MINUTES);
+            if (!completed) { // if process timeouts, terminate
+                throw new TimeoutException();
+            }
             inputStr = new InputStreamReader(process.getInputStream());
             bufferReader = new BufferedReader(inputStr);
             String line;
             while ((line = bufferReader.readLine()) != null) {
                 builder.append("\n").append(line);
             }
-        } catch (IOException ex) {
+        } catch (IOException | InterruptedException | TimeoutException ex) {
             ex.printStackTrace();
         } finally {
             try {
