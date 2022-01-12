@@ -34,7 +34,7 @@ public class Example {
 
     static void handleSingleProject(String projectFullName) {
         File projectDir = sourceCodeManager.getProjectDir(projectFullName);
-        List<Regression> regressionList = MysqlManager.selectRegressions("select bfc,buggy,bic,work,testcase from regressions where full_name='" + projectFullName + "'");
+        List<Regression> regressionList = MysqlManager.selectRegressions("select bfc,buggy,bic,work,testcase from regressions where project_full_name='" + projectFullName + "'");
 
         for (Regression regression : regressionList) {
 
