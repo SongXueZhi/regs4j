@@ -2,14 +2,18 @@ package utils;
 
 import core.ast.JdtClassRetriever;
 import core.ast.JdtMethodRetriever;
+import core.coverage.model.CoverNode;
 import model.Methodx;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.Scanner;
 
 public class CodeUtil {
 	public static CompilationUnit parseCompliationUnit(String fileContent) {
@@ -47,20 +51,8 @@ public class CodeUtil {
 
 
 	public static List<Methodx> getAllMethod(String codeContent) {
-		List<Methodx> methods = new ArrayList<>();
-		JdtMethodRetriever retriever = new JdtMethodRetriever();
 		CompilationUnit unit = parseCompliationUnit(codeContent);
-		unit.accept(retriever);
-		List<MethodDeclaration> methodNodes = retriever.getMemberList();
-		for (ASTNode node : methodNodes) {
-			MethodDeclaration methodDeclaration = (MethodDeclaration) node;
-			String simpleName = methodDeclaration.getName().toString();
-			String signature =getSignature(methodDeclaration);
-			int startLine = unit.getLineNumber(methodDeclaration.getStartPosition());
-			int endLine = unit.getLineNumber(methodDeclaration.getStartPosition() + node.getLength());
-			methods.add(new Methodx(signature, startLine, endLine, simpleName, methodDeclaration));
-		}
-		return methods;
+		return getAllMethod(unit);
 	}
 
 	public static List<Methodx> getAllMethod(CompilationUnit unit) {
@@ -71,7 +63,7 @@ public class CodeUtil {
 		for (ASTNode node : methodNodes) {
 			MethodDeclaration methodDeclaration = (MethodDeclaration) node;
 			String simpleName = methodDeclaration.getName().toString();
-			String signature =getSignature(methodDeclaration);
+			String signature = getSignature(methodDeclaration);
 			int startLine = unit.getLineNumber(methodDeclaration.getStartPosition());
 			int endLine = unit.getLineNumber(methodDeclaration.getStartPosition() + node.getLength());
 			methods.add(new Methodx(signature, startLine, endLine, simpleName, methodDeclaration));
@@ -96,5 +88,32 @@ public class CodeUtil {
 			sj.add(param.toString());
 		}
 		return  sj.toString();
+	}
+
+	public static List<Methodx> getCoveredMethods(File srcDir, List<CoverNode> nodes) throws Exception{
+		System.out.println(srcDir);
+		HashMap<String, List<Methodx>> cacheMethods = new HashMap<>();
+		List<Methodx> result = new ArrayList<>();
+		for (CoverNode node: nodes) {
+			String javaFile = node.getCoverPackage().getName() + File.separatorChar + node.getCoverClass().getFileName();
+			if (!cacheMethods.containsKey(javaFile)) {
+				Scanner sc = new Scanner(new File(srcDir, javaFile));
+				String content = sc.useDelimiter("\\Z").next();
+				sc.close();
+				List<Methodx> allMethods = getAllMethod(content);
+				cacheMethods.put(javaFile, allMethods);
+			}
+			int lineNum = node.getCoverMethod().getLine(); // need line number as method can have different signature
+			Methodx correctMethod = null;
+			for (Methodx method: cacheMethods.get(javaFile)) {
+				if (method.getStartLine() > lineNum)
+					break;
+				correctMethod = method;
+			}
+			assert(correctMethod != null);
+			System.out.println(javaFile + "#" + correctMethod.getSimpleName());
+			result.add(correctMethod);
+		}
+		return result;
 	}
 }
