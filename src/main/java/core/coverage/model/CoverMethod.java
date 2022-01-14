@@ -47,4 +47,8 @@ public class CoverMethod {
         this.line = line;
     }
 
+    public String toString() {
+        return "Method: " + String.format("%s (%s) [%d]", this.name, this.signature, this.line);
+    }
+
 }

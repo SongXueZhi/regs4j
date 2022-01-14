@@ -51,4 +51,8 @@ public class CoverNode {
  public void setCoverClass(CoverClass coverClass) {
   this.coverClass = coverClass;
  }
+
+ public String toString() {
+     return String.format("[%s, %s, %s]", this.coverPackage, this.coverClass, this.coverMethod);
+ }
 }
