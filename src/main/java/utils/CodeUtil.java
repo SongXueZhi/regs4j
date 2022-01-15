@@ -10,6 +10,7 @@ import org.eclipse.jdt.core.dom.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -81,7 +82,7 @@ public class CodeUtil {
 
 	public static  String getSignature(MethodDeclaration methodDeclaration){
 		String simpleName = methodDeclaration.getName().toString();
-		List<ASTNode> parameters = methodDeclaration.parameters();
+		List<ASTNode> parameters = ListUtil.castList(ASTNode.class, methodDeclaration.parameters());
 		// SingleVariableDeclaration
 		StringJoiner sj = new StringJoiner(",", simpleName + "(", ")");
 		for (ASTNode param : parameters) {
@@ -91,9 +92,8 @@ public class CodeUtil {
 	}
 
 	public static List<Methodx> getCoveredMethods(File srcDir, List<CoverNode> nodes) throws Exception{
-		System.out.println(srcDir);
 		HashMap<String, List<Methodx>> cacheMethods = new HashMap<>();
-		List<Methodx> result = new ArrayList<>();
+		HashSet<Methodx> result = new HashSet<>();
 		for (CoverNode node: nodes) {
 			String javaFile = node.getCoverPackage().getName() + File.separatorChar + node.getCoverClass().getFileName();
 			if (!cacheMethods.containsKey(javaFile)) {
@@ -111,9 +111,8 @@ public class CodeUtil {
 				correctMethod = method;
 			}
 			assert(correctMethod != null);
-			System.out.println(javaFile + "#" + correctMethod.getSimpleName());
 			result.add(correctMethod);
 		}
-		return result;
+		return new ArrayList<Methodx>(result);
 	}
 }
