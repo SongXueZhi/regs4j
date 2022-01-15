@@ -31,9 +31,9 @@ public class StringUtil {
             }
         }
         int editDistance = distanceMatrix[s1.length() - 1][s2.length() - 1];
-        double minLen = (double) minimum(s1.length() - 1, s2.length() - 1);
-        double similarity =  minLen - editDistance;
-        return similarity / minLen;
+        double lenSum = (double) (s1.length() - 1 + s2.length() - 1);
+        double similarity =  lenSum - editDistance;
+        return similarity / lenSum;
     }
 
     private static int minimum (int a, int... b) {
@@ -42,5 +42,11 @@ public class StringUtil {
             min = min < i ? min : i;
         }
         return min;
+    }
+
+    public static String reduceWhitespace(String s) {
+        s = s.replaceAll("[\\r\\n]+", " ");
+        s = s.replaceAll("\\s+", " ");
+        return s;
     }
 }
