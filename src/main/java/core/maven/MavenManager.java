@@ -97,4 +97,10 @@ public class MavenManager {
     protected String getUserHomePath() {
         return SystemUtils.getUserHome().toString();
     }
+
+    public String getSrcDir(File pomFile) throws Exception{
+        Model pomModel = getPomModel(pomFile);
+        String srcDir = pomModel.getBuild().getSourceDirectory();
+        return srcDir == null ? String.format("src%cmain%cjava", File.separatorChar, File.separatorChar): srcDir;
+    }
 }
