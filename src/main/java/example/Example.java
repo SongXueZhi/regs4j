@@ -6,15 +6,23 @@ import core.MysqlManager;
 import core.Reducer;
 import core.SourceCodeManager;
 import core.coverage.model.CoverNode;
+import core.maven.MavenManager;
 import model.Regression;
 import model.Revision;
+import model.Methodx;
 import run.Runner;
+import utils.CodeUtil;
 import utils.FileUtilx;
+import utils.ListUtil;
+import utils.StringUtil;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
+
+import org.eclipse.jdt.core.dom.Statement;
 
 public class Example {
 
@@ -22,17 +30,24 @@ public class Example {
     static Reducer reducer = new Reducer();
     static Migrator migrator = new Migrator();
     static Runner runner = new Runner();
+    static MavenManager mvnManager = new MavenManager();
+
+    final static double SIMILARITY_INDEX = 0.8;
 
     public static void main(String[] args) {
         Set<String> projectFullNameList = FileUtilx.readSetFromFile("projects.txt");
 
         for (String projectFullName : projectFullNameList) {
-            handleSingleProject(projectFullName);
+            try {
+                handleSingleProject(projectFullName);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
     }
 
-    static void handleSingleProject(String projectFullName) {
+    static void handleSingleProject(String projectFullName) throws Exception{
         File projectDir = sourceCodeManager.getProjectDir(projectFullName);
         List<Regression> regressionList = MysqlManager.selectRegressions("select bfc,buggy,bic,work,testcase from regressions where project_full_name='" + projectFullName + "'");
 
@@ -55,7 +70,6 @@ public class Example {
             File workDir = sourceCodeManager.checkout(work, projectDir, projectFullName);
             work.setLocalCodeDir(workDir);
 
-
             List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{buggy, ric, work});
 
             //
@@ -63,29 +77,85 @@ public class Example {
 
             //testWithJacoco
             List<CoverNode> rfcCoveredMethodList = runner.runTestWithJacoco(rfcDir, regression.getTestCase());
-            System.out.println("rfc coverage node size:" + rfcCoveredMethodList.size());
+            String rfcSrcDir = mvnManager.getSrcDir(new File(rfcDir, "pom.xml"));
+            List<Methodx> rfcMethods = CodeUtil.getCoveredMethods(new File(rfcDir, rfcSrcDir), rfcCoveredMethodList);
 
-            List<CoverNode> buggyCoveredMethodList = runner.runTestWithJacoco(buggyDir, regression.getTestCase());
-            System.out.println("buggy coverage node size:" + buggyCoveredMethodList.size());
+            // List<CoverNode> buggyCoveredMethodList = runner.runTestWithJacoco(buggyDir, regression.getTestCase());
+            // System.out.println("buggy coverage node size:" + buggyCoveredMethodList.size());
 
             List<CoverNode> ricCoveredMethodList = runner.runTestWithJacoco(ricDir, regression.getTestCase());
-            System.out.println("ric coverage node size:" + ricCoveredMethodList.size());
+            String ricSrcDir = mvnManager.getSrcDir(new File(ricDir, "pom.xml"));
+            List<Methodx> ricMethods = CodeUtil.getCoveredMethods(new File(ricDir, ricSrcDir), ricCoveredMethodList);
 
-            List<CoverNode> workCoveredMethodList = runner.runTestWithJacoco(workDir, regression.getTestCase());
-            System.out.println("work coverage node size:" + workCoveredMethodList.size());
+            double score = similarityScore(rfcMethods, ricMethods);
+            System.out.println(String.format("Similarity: %.3f", score));
 
-            //TODO Siang Hwee
-            System.out.println("Please compare coverage node similarity here");
+            // List<CoverNode> workCoveredMethodList = runner.runTestWithJacoco(workDir, regression.getTestCase());
+            // System.out.println("work coverage node size:" + workCoveredMethodList.size());
         }
     }
 
     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
-
         migrator.equipRfcWithChangeInfo(rfc);
         reducer.reduceTestCases(rfc, testCase);
         needToTestMigrateRevisionList.forEach(revision -> {
             migrator.migrateTestFromTo_0(rfc, revision);
         });
+    }
+
+    static double similarityScore(List<Methodx> rfcMethods, List<Methodx> ricMethods) {
+        double common = 0.0;
+        for (Methodx rfcMethod : rfcMethods) {
+            List<Methodx> candidates = new ArrayList<>();
+            String rfcName = rfcMethod.getSimpleName();
+            for (Methodx ricMethod : ricMethods) {
+                String ricName = ricMethod.getSimpleName();
+                if (StringUtil.editDistance(rfcName, ricName) > SIMILARITY_INDEX) {
+                    candidates.add(ricMethod);
+                }
+            }
+            if (candidates.size() == 0) // not able to find a suitable candidate, try all methods
+                candidates = ricMethods;
+            double score = findSimilarityScore(rfcMethod, candidates);
+            if (score > SIMILARITY_INDEX)
+                common += 1.0;
+        }
+        return common/rfcMethods.size();
+    }
+
+    private static double findSimilarityScore(Methodx main, List<Methodx> candidates) {
+        double result = 0.0;
+        for (Methodx other : candidates) {
+            double score = methodSimilarity(main, other);
+            result = score > result ? score : result;
+        }
+        return result;
+    }
+
+    private static double methodSimilarity(Methodx main, Methodx other) {
+        double totalScore = 0.0;
+        List<Statement> mainStatements = ListUtil.castList(Statement.class, main.getMethodDeclaration()
+                                                                                .getBody().statements());
+        List<Statement> otheStatements = ListUtil.castList(Statement.class, other.getMethodDeclaration()
+                                                                                 .getBody().statements());
+        for(Statement a: mainStatements) {
+            double score = 0.0;
+            for (Statement b: otheStatements) {
+                if (a.getClass() == b.getClass()) {
+                    double temp = statementSimilarity(a, b);
+                    score = temp > score ? temp : score;
+                }
+            }
+            totalScore += score;
+        }
+        return totalScore/mainStatements.size();
+    }
+
+    private static double statementSimilarity(Statement a, Statement b) {
+        String aString = StringUtil.reduceWhitespace(a.toString());
+        String bString = StringUtil.reduceWhitespace(b.toString());
+        double score = StringUtil.editDistance(aString, bString);
+        return score;
     }
 
 }
