@@ -9,6 +9,7 @@ import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import utils.CodeUtil;
+import utils.ListUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +44,7 @@ public class Reducer {
         try {
             CompilationUnit unit = CodeUtil.parseCompliationUnit(FileUtils.readFileToString(file,
                     "UTF-8"));
-            List<TypeDeclaration> types = unit.types();
+            List<TypeDeclaration> types = ListUtil.castList(TypeDeclaration.class, unit.types());
             for (TypeDeclaration type : types) {
                 MethodDeclaration[] mdArray = type.getMethods();
                 for (int i = 0; i < mdArray.length; i++) {
@@ -54,7 +55,7 @@ public class Reducer {
                     }
                 }
             }
-            List<ImportDeclaration> imports = unit.imports();
+            List<ImportDeclaration> imports = ListUtil.castList(ImportDeclaration.class, unit.imports());
             int len = imports.size();
             ImportDeclaration[] importDeclarations = new ImportDeclaration[len];
             for (int i = 0; i < len; i++) {
@@ -65,10 +66,8 @@ public class Reducer {
                 String importName = importDeclaration.getName().getFullyQualifiedName();
                 if (importName.lastIndexOf(".") > -1) {
                     importName = importName.substring(importName.lastIndexOf(".") + 1);
-                } else {
-                    importName = importName;
                 }
-
+                
                 boolean flag = false;
                 for (TypeDeclaration type : types) {
                     if (type.toString().contains(importName)) {
