@@ -1,8 +1,5 @@
 package model;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class TestFile extends ChangedFile {
 	public Type type;
 	private String qualityClassName;

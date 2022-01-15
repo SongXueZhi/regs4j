@@ -8,9 +8,7 @@ import org.eclipse.jgit.diff.DiffEntry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Migrator {
     public final static String NONE_PATH = "/dev/null";
