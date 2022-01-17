@@ -70,21 +70,15 @@ public class Example {
             work.setLocalCodeDir(workDir);
 
             List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{buggy, ric, work});
-
-            //
             migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
 
             //testWithJacoco
             Runner rfcRunner = new Runner(rfcDir, regression.getTestCase());
             List<CoverNode> rfcCoveredMethodList = rfcRunner.getCoverNodes();
 
-            // List<CoverNode> buggyCoveredMethodList = runner.runTestWithJacoco(buggyDir, regression.getTestCase());
-            // System.out.println("buggy coverage node size:" + buggyCoveredMethodList.size());
-
             Runner ricRunner = new Runner(ricDir, regression.getTestCase());
             List<CoverNode> ricCoveredMethodList = ricRunner.getCoverNodes();
             List<String> ricErrorMessages = ricRunner.getErrorMessages();
-            System.out.println("Error Type: " + ricErrorMessages);
 
 
             if (rfcCoveredMethodList != null && ricCoveredMethodList != null) {
@@ -93,11 +87,11 @@ public class Example {
                 List<Methodx> rfcMethods = CodeUtil.getCoveredMethods(new File(rfcDir, rfcSrcDir), rfcCoveredMethodList);
                 List<Methodx> ricMethods = CodeUtil.getCoveredMethods(new File(ricDir, ricSrcDir), ricCoveredMethodList);
                 double score = similarityScore(rfcMethods, ricMethods);
-                System.out.println(String.format("Similarity: %.3f", score));
+                String errorsMsgs = StringUtil.join(ricErrorMessages, ",");
+                String updateQuery = String.format("INSERT INTO results VALUES ('%s', '%s', '%s', %f, '%s')", 
+                                                    projectFullName, rfc.getCommitID(), ric.getCommitID(), score, errorsMsgs);
+                MysqlManager.executeUpdate(updateQuery);
             }
-
-            // List<CoverNode> workCoveredMethodList = runner.runTestWithJacoco(workDir, regression.getTestCase());
-            // System.out.println("work coverage node size:" + workCoveredMethodList.size());
         }
     }
 

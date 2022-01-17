@@ -1,5 +1,8 @@
 package utils;
 
+import java.util.Collection;
+import java.util.StringJoiner;
+
 public class StringUtil {
     public static double editDistance(String s1, String s2) {
         /* implements OSA Damerau-Levenshtein distance from  
@@ -48,5 +51,13 @@ public class StringUtil {
         s = s.replaceAll("[\\r\\n]+", " ");
         s = s.replaceAll("\\s+", " ");
         return s;
+    }
+
+    public static String join(Collection<String> strings, CharSequence delimiter) {
+        StringJoiner sj = new StringJoiner(delimiter);
+        for (String s: strings) {
+            sj.add(s);
+        }
+        return sj.toString();
     }
 }
