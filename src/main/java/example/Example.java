@@ -29,7 +29,6 @@ public class Example {
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
     static Reducer reducer = new Reducer();
     static Migrator migrator = new Migrator();
-    static Runner runner = new Runner();
     static MavenManager mvnManager = new MavenManager();
 
     final static double SIMILARITY_INDEX = 0.8;
@@ -76,19 +75,26 @@ public class Example {
             migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
 
             //testWithJacoco
-            List<CoverNode> rfcCoveredMethodList = runner.runTestWithJacoco(rfcDir, regression.getTestCase());
-            String rfcSrcDir = mvnManager.getSrcDir(new File(rfcDir, "pom.xml"));
-            List<Methodx> rfcMethods = CodeUtil.getCoveredMethods(new File(rfcDir, rfcSrcDir), rfcCoveredMethodList);
+            Runner rfcRunner = new Runner(rfcDir, regression.getTestCase());
+            List<CoverNode> rfcCoveredMethodList = rfcRunner.getCoverNodes();
 
             // List<CoverNode> buggyCoveredMethodList = runner.runTestWithJacoco(buggyDir, regression.getTestCase());
             // System.out.println("buggy coverage node size:" + buggyCoveredMethodList.size());
 
-            List<CoverNode> ricCoveredMethodList = runner.runTestWithJacoco(ricDir, regression.getTestCase());
-            String ricSrcDir = mvnManager.getSrcDir(new File(ricDir, "pom.xml"));
-            List<Methodx> ricMethods = CodeUtil.getCoveredMethods(new File(ricDir, ricSrcDir), ricCoveredMethodList);
+            Runner ricRunner = new Runner(ricDir, regression.getTestCase());
+            List<CoverNode> ricCoveredMethodList = ricRunner.getCoverNodes();
+            List<String> ricErrorMessages = ricRunner.getErrorMessages();
+            System.out.println("Error Type: " + ricErrorMessages);
 
-            double score = similarityScore(rfcMethods, ricMethods);
-            System.out.println(String.format("Similarity: %.3f", score));
+
+            if (rfcCoveredMethodList != null && ricCoveredMethodList != null) {
+                String rfcSrcDir = mvnManager.getSrcDir(new File(rfcDir, "pom.xml"));
+                String ricSrcDir = mvnManager.getSrcDir(new File(ricDir, "pom.xml"));
+                List<Methodx> rfcMethods = CodeUtil.getCoveredMethods(new File(rfcDir, rfcSrcDir), rfcCoveredMethodList);
+                List<Methodx> ricMethods = CodeUtil.getCoveredMethods(new File(ricDir, ricSrcDir), ricCoveredMethodList);
+                double score = similarityScore(rfcMethods, ricMethods);
+                System.out.println(String.format("Similarity: %.3f", score));
+            }
 
             // List<CoverNode> workCoveredMethodList = runner.runTestWithJacoco(workDir, regression.getTestCase());
             // System.out.println("work coverage node size:" + workCoveredMethodList.size());

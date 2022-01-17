@@ -42,7 +42,7 @@ public class Executor {
      * @param cmd command line
      * @return return result by exec command
      */
-    public String exec(String cmd) {
+    public String exec(String cmd) throws TimeoutException{
         StringBuilder builder = new StringBuilder();
         Process process = null;
         InputStreamReader inputStr = null;
@@ -65,7 +65,7 @@ public class Executor {
             while ((line = bufferReader.readLine()) != null) {
                 builder.append("\n").append(line);
             }
-        } catch (IOException | InterruptedException | TimeoutException ex) {
+        } catch (IOException | InterruptedException ex) {
             ex.printStackTrace();
         } finally {
             try {

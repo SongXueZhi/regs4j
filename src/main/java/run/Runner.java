@@ -3,39 +3,62 @@ package run;
 import core.coverage.CodeCoverage;
 import core.coverage.model.CoverNode;
 import core.maven.JacocoMavenManager;
+import core.test.TestManager;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 public class Runner {
-    CodeCoverage codeCoverage = new CodeCoverage();
-    JacocoMavenManager jacocoMavenManager = new JacocoMavenManager();
+    private static CodeCoverage codeCoverage = new CodeCoverage();
+    private static JacocoMavenManager jacocoMavenManager = new JacocoMavenManager();
+    private static TestManager testManager = new TestManager();
 
-    public List<CoverNode> runTestWithJacoco(File revDir, String testCase)  {
-        List<CoverNode> coverNodeList = codeCoverage.readJacocoReports(revDir);
-        if (coverNodeList == null) {
-            try {
-                coverNodeList = testWithJacoco(revDir,testCase);
-            } catch (Exception exception) {
-                exception.printStackTrace();
-            }
-        }
-        return coverNodeList;
+    private List<CoverNode> coverNodes;
+    private List<String> errorMessages;
+    private File revDir;
+    private String testCase;
+
+    public Runner(File revDir, String testCase) {
+        this.revDir = revDir;
+        this.testCase = testCase;
+        this.coverNodes = codeCoverage.readJacocoReports(this.revDir);
+        this.errorMessages = testManager.getErrors(this.revDir);
     }
 
-    private List<CoverNode> testWithJacoco(File dir, String testCase) throws Exception {
+    public List<CoverNode> getCoverNodes() {
+        if (this.coverNodes == null) {
+            this.run();
+        }
+        return this.coverNodes;
+    }
+
+    public List<String> getErrorMessages() {
+        if (this.errorMessages == null) {
+            this.run();
+        }
+        return this.errorMessages;
+    }
+
+    private void run() {
         //add Jacoco plugin
         try {
-            jacocoMavenManager.addJacocoFeatureToMaven(dir);
+            jacocoMavenManager.addJacocoFeatureToMaven(this.revDir);
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
         }
-        String testCommand = "mvn test -Dtest="+testCase+" "+"-Dmaven.test.failure.ignore=true";
-        new Executor().setDirectory(dir).exec(testCommand);
-
-        // git test coverage methods
-        return codeCoverage.readJacocoReports(dir);
+        // execute the test
+        String testCommand = "mvn test -Dtest="+this.testCase+" "+"-Dmaven.test.failure.ignore=true";
+        try {
+            new Executor().setDirectory(this.revDir).exec(testCommand);
+            this.coverNodes = codeCoverage.readJacocoReports(this.revDir);
+            this.errorMessages = testManager.getErrors(this.revDir);
+        } catch (TimeoutException ex) {
+            this.errorMessages = new ArrayList<>();
+            this.errorMessages.add(ex.getClass().getName());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }
