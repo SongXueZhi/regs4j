@@ -31,7 +31,12 @@ public class TestManager {
             Element root = doc.getRootElement();
             Element testCase = root.element("testcase");
             Element error = testCase.element("error");
-            return error == null ? null : error.attributeValue("type", null);
+            if (error != null)
+                return error.attributeValue("type");
+            Element failure = testCase.element("failure");
+            if (failure != null)
+                return failure.attributeValue("type");
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
