@@ -34,6 +34,15 @@ public class Executor {
         pb.directory(file);
         return this;
     }
+    
+    public String exec(String cmd) {
+    	try {
+    		return this.exec(cmd, 0);
+    	} catch (TimeoutException e) {
+    		e.printStackTrace(); // should not timeout
+    		return null;
+    	}
+    }
 
     /**
      * Run command line and get results,you can combine the multi-command by ";"
@@ -42,7 +51,7 @@ public class Executor {
      * @param cmd command line
      * @return return result by exec command
      */
-    public String exec(String cmd) throws TimeoutException{
+    public String exec(String cmd, int timeout) throws TimeoutException{
         StringBuilder builder = new StringBuilder();
         Process process = null;
         InputStreamReader inputStr = null;
@@ -55,9 +64,10 @@ public class Executor {
                 pb.command("bash", "-c", cmd);
             }
             process = pb.start();
-            boolean completed = process.waitFor(1, TimeUnit.MINUTES);
-            if (!completed) { // if process timeouts, terminate
-                throw new TimeoutException();
+            if (timeout > 0) {
+            	boolean completed = process.waitFor(timeout, TimeUnit.MINUTES);
+            	if (!completed)
+            		throw new TimeoutException();
             }
             inputStr = new InputStreamReader(process.getInputStream());
             bufferReader = new BufferedReader(inputStr);
