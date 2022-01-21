@@ -49,9 +49,11 @@ public class Runner {
             e.printStackTrace();
         }
         // execute the test
+        String buildCommand = "mvn compile";
         String testCommand = "mvn test -Dtest="+this.testCase+" "+"-Dmaven.test.failure.ignore=true";
         try {
-            new Executor().setDirectory(this.revDir).exec(testCommand);
+        	new Executor().setDirectory(this.revDir).exec(buildCommand);
+            new Executor().setDirectory(this.revDir).exec(testCommand, 5);
             this.coverNodes = codeCoverage.readJacocoReports(this.revDir);
             this.errorMessages = testManager.getErrors(this.revDir);
         } catch (TimeoutException ex) {
