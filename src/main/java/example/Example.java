@@ -34,8 +34,7 @@ public class Example {
     final static double SIMILARITY_INDEX = 0.8;
 
     public static void main(String[] args) {
-        Set<String> projectFullNameList = FileUtilx.readSetFromFile("projects.txt");
-
+        Set<String> projectFullNameList = FileUtilx.readSetFromFile("all_projects.txt");
         for (String projectFullName : projectFullNameList) {
             try {
                 handleSingleProject(projectFullName);
@@ -49,9 +48,8 @@ public class Example {
     static void handleSingleProject(String projectFullName) throws Exception{
         File projectDir = sourceCodeManager.getProjectDir(projectFullName);
         List<Regression> regressionList = MysqlManager.selectRegressions("select bfc,buggy,bic,work,testcase from regressions where project_full_name='" + projectFullName + "'");
-
+        int count = 0;
         for (Regression regression : regressionList) {
-
             //prepare four version
             Revision rfc = regression.getRfc();
             File rfcDir = sourceCodeManager.checkout(rfc, projectDir, projectFullName);
@@ -75,24 +73,47 @@ public class Example {
             //testWithJacoco
             Runner rfcRunner = new Runner(rfcDir, regression.getTestCase());
             List<CoverNode> rfcCoveredMethodList = rfcRunner.getCoverNodes();
+            
+            Runner workRunner = new Runner(workDir, regression.getTestCase());
+            List<CoverNode> workCoveredMethodList = workRunner.getCoverNodes();
 
+            Runner buggyRunner = new Runner(buggyDir, regression.getTestCase());
+            List<CoverNode> buggyCoveredMethodList = buggyRunner.getCoverNodes();
+            List<String> buggyErrorMessages = buggyRunner.getErrorMessages();
+            
             Runner ricRunner = new Runner(ricDir, regression.getTestCase());
             List<CoverNode> ricCoveredMethodList = ricRunner.getCoverNodes();
-            List<String> ricErrorMessages = ricRunner.getErrorMessages();
-
-
-            if (rfcCoveredMethodList != null && ricCoveredMethodList != null) {
+            
+            double r_wscore = -1.0;
+            double b_rscore = -1.0;
+            double r_rscore = -1.0;
+            
+            if (rfcCoveredMethodList != null && workCoveredMethodList != null &&
+            		buggyCoveredMethodList != null && ricCoveredMethodList != null) {
                 String rfcSrcDir = mvnManager.getSrcDir(new File(rfcDir, "pom.xml"));
+                String workSrcDir = mvnManager.getSrcDir(new File(workDir, "pom.xml"));
+                String buggySrcDir = mvnManager.getSrcDir(new File(buggyDir, "pom.xml"));
                 String ricSrcDir = mvnManager.getSrcDir(new File(ricDir, "pom.xml"));
+
                 List<Methodx> rfcMethods = CodeUtil.getCoveredMethods(new File(rfcDir, rfcSrcDir), rfcCoveredMethodList);
+                List<Methodx> workMethods = CodeUtil.getCoveredMethods(new File(workDir, workSrcDir), workCoveredMethodList);
+                r_wscore = similarityScore(rfcMethods, workMethods);
+                
+                List<Methodx> buggyMethods = CodeUtil.getCoveredMethods(new File(buggyDir, buggySrcDir), buggyCoveredMethodList);
                 List<Methodx> ricMethods = CodeUtil.getCoveredMethods(new File(ricDir, ricSrcDir), ricCoveredMethodList);
-                double score = similarityScore(rfcMethods, ricMethods);
-                String errorsMsgs = StringUtil.join(ricErrorMessages, ",");
-                String updateQuery = String.format("INSERT INTO results VALUES ('%s', '%s', '%s', %f, '%s')", 
-                                                    projectFullName, rfc.getCommitID(), ric.getCommitID(), score, errorsMsgs);
-                MysqlManager.executeUpdate(updateQuery);
+                b_rscore = similarityScore(buggyMethods, ricMethods);
+                
+                r_rscore = similarityScore(rfcMethods, ricMethods);
             }
+            String errorsMsgs = StringUtil.join(buggyErrorMessages, ",");
+            String updateQuery = String.format("INSERT INTO results VALUES ('%s', '%s', '%s', '%s', '%s', %f, %f, %f, '%s')", 
+                                                projectFullName, rfc.getCommitID(), buggy.getCommitID(), ric.getCommitID(),
+                                                work.getCommitID(), r_rscore, r_wscore, b_rscore, errorsMsgs);
+            MysqlManager.executeUpdate(updateQuery);
+            count += 1;
+            System.out.println(String.format("Handled %s: %d/%d", projectFullName, count, regressionList.size()));
         }
+        System.out.println();
     }
 
     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
