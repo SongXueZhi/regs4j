@@ -54,6 +54,8 @@ public class StringUtil {
     }
 
     public static String join(Collection<String> strings, CharSequence delimiter) {
+        if (strings == null)
+            return null;
         StringJoiner sj = new StringJoiner(delimiter);
         for (String s: strings) {
             sj.add(s);
