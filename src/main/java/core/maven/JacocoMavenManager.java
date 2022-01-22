@@ -22,6 +22,7 @@ import org.apache.maven.model.*;
 
 import java.io.File;
 import java.util.Map;
+import java.util.List;
 
 public class JacocoMavenManager {
     final static String GROUP_ID = "org.jacoco";
@@ -33,9 +34,25 @@ public class JacocoMavenManager {
         MavenManager mvnManager = new MavenManager();
         File pomFile = new File(bfcDir, "pom.xml");
         Model pomModel = mvnManager.getPomModel(pomFile);
+        removeJacocoIfExist(pomModel);
         addJacocoDependency(pomModel);
         addJacocoPlugin(pomModel);
         mvnManager.saveModel(pomFile, pomModel);
+    }
+    
+    private void removeJacocoIfExist(Model pomModel) {
+    	Build build = pomModel.getBuild();
+    	List<Plugin> plugins = build.getPlugins();
+    	Plugin toRemove = null;
+    	for (Plugin plugin : plugins) {
+    		if (plugin.getArtifactId().contains("jacoco")) {
+    			toRemove = plugin;
+    			break;
+    		}
+    	}
+    	if (toRemove != null) {
+    		build.removePlugin(toRemove);
+    	}
     }
 
 
