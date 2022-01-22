@@ -66,21 +66,28 @@ public class Example {
             Revision work = regression.getWork();
             File workDir = sourceCodeManager.checkout(work, projectDir, projectFullName);
             work.setLocalCodeDir(workDir);
-
+            
+            count += 1;
+            System.out.println(String.format("Handling %s: %d/%d", projectFullName, count, regressionList.size()));
+            
             List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{buggy, ric, work});
             migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
 
             //testWithJacoco
+            System.out.println("\tProcessing rfc");
             Runner rfcRunner = new Runner(rfcDir, regression.getTestCase());
             List<CoverNode> rfcCoveredMethodList = rfcRunner.getCoverNodes();
             
+            System.out.println("\tProcessing work");
             Runner workRunner = new Runner(workDir, regression.getTestCase());
             List<CoverNode> workCoveredMethodList = workRunner.getCoverNodes();
 
+            System.out.println("\tProcessing buggy");
             Runner buggyRunner = new Runner(buggyDir, regression.getTestCase());
             List<CoverNode> buggyCoveredMethodList = buggyRunner.getCoverNodes();
             List<String> buggyErrorMessages = buggyRunner.getErrorMessages();
             
+            System.out.println("\tProcessing ric");
             Runner ricRunner = new Runner(ricDir, regression.getTestCase());
             List<CoverNode> ricCoveredMethodList = ricRunner.getCoverNodes();
             
@@ -110,8 +117,7 @@ public class Example {
                                                 projectFullName, rfc.getCommitID(), buggy.getCommitID(), ric.getCommitID(),
                                                 work.getCommitID(), r_rscore, r_wscore, b_rscore, errorsMsgs);
             MysqlManager.executeUpdate(updateQuery);
-            count += 1;
-            System.out.println(String.format("Handled %s: %d/%d", projectFullName, count, regressionList.size()));
+            System.out.println("Done");
         }
         System.out.println();
     }
