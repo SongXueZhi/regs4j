@@ -27,6 +27,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MavenManager {
     public final static String M2AFFIX = ".m2" + File.separator + "repository";
@@ -101,6 +104,25 @@ public class MavenManager {
     public String getSrcDir(File pomFile) throws Exception{
         Model pomModel = getPomModel(pomFile);
         String srcDir = pomModel.getBuild().getSourceDirectory();
-        return srcDir == null ? String.format("src%cmain%cjava", File.separatorChar, File.separatorChar): srcDir;
+        return srcDir == null ? String.format("src%cmain%cjava", File.separatorChar, File.separatorChar): 
+        						replaceProperties(srcDir, pomModel);
+    }
+    
+    private String replaceProperties(String s, Model pomModel) {
+    	Properties props = pomModel.getProperties();
+    	Pattern p = Pattern.compile("\\$\\{(.+)\\}");
+    	Matcher m = p.matcher(s);
+    	StringBuilder sb = new StringBuilder();
+    	int start = 0;
+    	while(m.find()) {
+    		sb.append(s.substring(start, m.start()));
+    		String prop = props.getProperty(m.group(1));
+    		if (prop != null) {
+    			sb.append(prop);
+    		}
+    		start = m.end();
+    	}
+    	sb.append(s.substring(start));
+    	return sb.toString();
     }
 }
