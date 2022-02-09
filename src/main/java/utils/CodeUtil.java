@@ -8,6 +8,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -91,17 +92,22 @@ public class CodeUtil {
 		return  sj.toString();
 	}
 
-	public static List<Methodx> getCoveredMethods(File srcDir, List<CoverNode> nodes) throws Exception{
+	public static List<Methodx> getCoveredMethods(File srcDir, List<CoverNode> nodes) {
 		HashMap<String, List<Methodx>> cacheMethods = new HashMap<>();
 		HashSet<Methodx> result = new HashSet<>();
 		for (CoverNode node: nodes) {
 			String javaFile = node.getCoverPackage().getName() + File.separatorChar + node.getCoverClass().getFileName();
 			if (!cacheMethods.containsKey(javaFile)) {
-				Scanner sc = new Scanner(new File(srcDir, javaFile));
-				String content = sc.useDelimiter("\\Z").next();
-				sc.close();
-				List<Methodx> allMethods = getAllMethod(content);
-				cacheMethods.put(javaFile, allMethods);
+				try {
+					Scanner sc = new Scanner(new File(srcDir, javaFile));
+					String content = sc.useDelimiter("\\Z").next();
+					sc.close();
+					List<Methodx> allMethods = getAllMethod(content);
+					cacheMethods.put(javaFile, allMethods);
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+					continue; // TODO: handle properly for files that cannot be found
+				}
 			}
 			int lineNum = node.getCoverMethod().getLine(); // need line number as method can have different signature
 			Methodx correctMethod = null;
@@ -110,8 +116,8 @@ public class CodeUtil {
 					break;
 				correctMethod = method;
 			}
-			assert(correctMethod != null);
-			result.add(correctMethod);
+			if (correctMethod != null)
+				result.add(correctMethod);
 		}
 		return new ArrayList<Methodx>(result);
 	}
