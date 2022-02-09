@@ -101,11 +101,17 @@ public class MavenManager {
         return SystemUtils.getUserHome().toString();
     }
 
-    public String getSrcDir(File pomFile) throws Exception{
-        Model pomModel = getPomModel(pomFile);
+    public String getSrcDir(File codePath) throws Exception{
+    	Model pomModel = getPomModel(new File(codePath, "pom.xml"));
+        List<String> modules = pomModel.getModules();
+    	String module = "";
+    	if (modules.size() == 1) { //handle single module
+    		module = modules.get(0) + File.separator;
+    		pomModel = getPomModel(new File(codePath, module + "pom.xml"));
+    	}
         String srcDir = pomModel.getBuild().getSourceDirectory();
-        return srcDir == null ? String.format("src%cmain%cjava", File.separatorChar, File.separatorChar): 
-        						replaceProperties(srcDir, pomModel);
+        return module + (srcDir == null ? String.format("src%cmain%cjava", File.separatorChar, File.separatorChar): 
+        								  replaceProperties(srcDir, pomModel));
     }
     
     private String replaceProperties(String s, Model pomModel) {
@@ -124,5 +130,17 @@ public class MavenManager {
     	}
     	sb.append(s.substring(start));
     	return sb.toString();
+    }
+    
+    public String getTargetDir(File codePath) throws Exception {
+    	Model pomModel = getPomModel(new File(codePath, "pom.xml"));
+    	List<String> modules = pomModel.getModules();
+    	String module = "";
+    	if (modules.size() == 1) { //handle single module
+    		module = modules.get(0) + File.separator;
+    		pomModel = getPomModel(new File(codePath, module + "pom.xml"));
+    	}
+    	String target = pomModel.getBuild().getDirectory();
+    	return module + (target == null ? "target" : replaceProperties(target, pomModel));
     }
 }

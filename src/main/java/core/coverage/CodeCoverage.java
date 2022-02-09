@@ -23,6 +23,7 @@ import core.coverage.model.CoverMethod;
 import core.coverage.model.CoverNode;
 import core.coverage.model.CoverPackage;
 import core.maven.JacocoMavenManager;
+import core.maven.MavenManager;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
@@ -33,7 +34,7 @@ import java.util.List;
 
 public class CodeCoverage {
     final static String MAVEN_POM = "pom.xml";
-    final static String JACOCO_PATH = "target" + File.separator + "site" + File.separator + "jacoco" + File.separator + "jacoco.xml";
+    final static String JACOCO_PATH = "site" + File.separator + "jacoco" + File.separator + "jacoco.xml";
 
     public void addJacocoFeatureToProject(File codePath) throws Exception {
         File pomFile = new File(codePath, MAVEN_POM);
@@ -45,7 +46,8 @@ public class CodeCoverage {
     public List<CoverNode> readJacocoReports(File codePath) {
         try {
             // Whether Jacoco report is created?
-            File jacocoXmlFile = new File(codePath + File.separator + JACOCO_PATH);
+        	String target = new MavenManager().getTargetDir(codePath);
+            File jacocoXmlFile = new File(codePath + File.separator + target + File.separator + JACOCO_PATH);
             // if not, return, there may jacoco plugin not work
             if (!jacocoXmlFile.exists()) {
                 return null;
