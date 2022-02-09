@@ -15,10 +15,10 @@ public class Runner {
     private static JacocoMavenManager jacocoMavenManager = new JacocoMavenManager();
     private static TestManager testManager = new TestManager();
 
-    private List<CoverNode> coverNodes;
-    private List<String> errorMessages;
-    private File revDir;
-    private String testCase;
+    protected List<CoverNode> coverNodes;
+    protected List<String> errorMessages;
+    protected File revDir;
+    protected String testCase;
 
     public Runner(File revDir, String testCase) {
         this.revDir = revDir;
