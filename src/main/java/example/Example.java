@@ -97,10 +97,10 @@ public class Example {
             
             if (rfcCoveredMethodList != null && workCoveredMethodList != null &&
             		buggyCoveredMethodList != null && ricCoveredMethodList != null) {
-                String rfcSrcDir = mvnManager.getSrcDir(new File(rfcDir, "pom.xml"));
-                String workSrcDir = mvnManager.getSrcDir(new File(workDir, "pom.xml"));
-                String buggySrcDir = mvnManager.getSrcDir(new File(buggyDir, "pom.xml"));
-                String ricSrcDir = mvnManager.getSrcDir(new File(ricDir, "pom.xml"));
+                String rfcSrcDir = mvnManager.getSrcDir(rfcDir);
+                String workSrcDir = mvnManager.getSrcDir(workDir);
+                String buggySrcDir = mvnManager.getSrcDir(buggyDir);
+                String ricSrcDir = mvnManager.getSrcDir(ricDir);
 
                 List<Methodx> rfcMethods = CodeUtil.getCoveredMethods(new File(rfcDir, rfcSrcDir), rfcCoveredMethodList);
                 List<Methodx> workMethods = CodeUtil.getCoveredMethods(new File(workDir, workSrcDir), workCoveredMethodList);
@@ -117,7 +117,7 @@ public class Example {
                                                 projectFullName, rfc.getCommitID(), buggy.getCommitID(), ric.getCommitID(),
                                                 work.getCommitID(), r_rscore, r_wscore, b_rscore, errorsMsgs);
             MysqlManager.executeUpdate(updateQuery);
-            System.out.println("Done");
+            System.out.println(String.format("Done! rw: %f, br: %f, rr: %f", r_wscore, b_rscore, r_rscore));
         }
         System.out.println();
     }
@@ -133,9 +133,15 @@ public class Example {
     static double similarityScore(List<Methodx> rfcMethods, List<Methodx> ricMethods) {
         double common = 0.0;
         for (Methodx rfcMethod : rfcMethods) {
+        	if (rfcMethod == null) {
+        		continue;
+        	}
             List<Methodx> candidates = new ArrayList<>();
             String rfcName = rfcMethod.getSimpleName();
             for (Methodx ricMethod : ricMethods) {
+            	if (ricMethod == null) {
+            		continue;
+            	}
                 String ricName = ricMethod.getSimpleName();
                 if (StringUtil.editDistance(rfcName, ricName) > SIMILARITY_INDEX) {
                     candidates.add(ricMethod);
@@ -161,6 +167,9 @@ public class Example {
 
     private static double methodSimilarity(Methodx main, Methodx other) {
         double totalScore = 0.0;
+        if (main == null || other == null) {
+        	return totalScore;
+        }
         List<Statement> mainStatements = ListUtil.castList(Statement.class, main.getMethodDeclaration()
                                                                                 .getBody().statements());
         List<Statement> otheStatements = ListUtil.castList(Statement.class, other.getMethodDeclaration()
