@@ -21,7 +21,11 @@ package core.maven;
 import org.apache.maven.model.*;
 
 import java.io.File;
+import java.net.HttpURLConnection;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.List;
 
 public class JacocoMavenManager {
@@ -34,24 +38,62 @@ public class JacocoMavenManager {
         MavenManager mvnManager = new MavenManager();
         File pomFile = new File(bfcDir, "pom.xml");
         Model pomModel = mvnManager.getPomModel(pomFile);
+        convertToHttps(pomModel);
         removeJacocoIfExist(pomModel);
         addJacocoDependency(pomModel);
         addJacocoPlugin(pomModel);
         mvnManager.saveModel(pomFile, pomModel);
     }
     
-    private void removeJacocoIfExist(Model pomModel) {
-    	Build build = pomModel.getBuild();
-    	List<Plugin> plugins = build.getPlugins();
-    	Plugin toRemove = null;
-    	for (Plugin plugin : plugins) {
-    		if (plugin.getArtifactId().contains("jacoco")) {
-    			toRemove = plugin;
-    			break;
+    private void convertToHttps(Model pomModel) {
+    	List<Repository> pluginRepos = pomModel.getPluginRepositories();
+    	for (Repository pluginRepo : pluginRepos) {
+    		String url = pluginRepo.getUrl();
+    		String[] split = url.split(":");
+    		if (split[0].equalsIgnoreCase("http")) {
+    			pluginRepo.setUrl("https:" + split[1]);
     		}
     	}
-    	if (toRemove != null) {
-    		build.removePlugin(toRemove);
+    	List<Repository> repos = pomModel.getRepositories();
+    	for (Repository repo: repos) {
+    		String url = repo.getUrl();
+    		String[] split = url.split(":", 2);
+    		if (split[1].equalsIgnoreCase("//repo2.maven.org/maven2/")) {
+    			split[1] = "//repo1.maven.org/maven2/";
+    		}
+    		if (split[0].equalsIgnoreCase("http")) {
+    			repo.setUrl("https:" + split[1]);
+    			try {
+    				HttpURLConnection connection = (HttpURLConnection) new URL(repo.getUrl()).openConnection();
+    				connection.setRequestMethod("GET");
+    				connection.connect();
+    				
+    				if (connection.getResponseCode() >= 300) {
+    					throw new ProtocolException();
+    				}
+    			} catch (Exception e) {
+    				repo.setUrl(url);
+    			}
+    		}
+    	}
+    }
+    
+    private void removeJacocoIfExist(Model pomModel) {
+    	Build build = pomModel.getBuild();
+    	if (build == null)
+    		return;
+    	List<Plugin> plugins = build.getPlugins();
+    	List<Plugin> toRemove = new ArrayList<>();
+    	for (Plugin plugin : plugins) {
+    		if (plugin.getArtifactId().contains("jacoco")) {
+    			toRemove.add(plugin);
+    		} else if (plugin.getArtifactId().contains("animal-sniffer")) {
+    			plugin.setVersion("1.16");
+    		}
+    	}
+    	
+    	for (Plugin plugin: toRemove) {
+    		build.removePlugin(plugin);
     	}
     }
 
