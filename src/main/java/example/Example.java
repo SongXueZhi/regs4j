@@ -34,7 +34,7 @@ public class Example {
     final static double SIMILARITY_INDEX = 0.8;
 
     public static void main(String[] args) {
-        Set<String> projectFullNameList = FileUtilx.readSetFromFile("all_projects.txt");
+        Set<String> projectFullNameList = FileUtilx.readSetFromFile("projects.txt");
         for (String projectFullName : projectFullNameList) {
             try {
                 handleSingleProject(projectFullName);

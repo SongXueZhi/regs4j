@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class Runner {
-    private static CodeCoverage codeCoverage = new CodeCoverage();
-    private static JacocoMavenManager jacocoMavenManager = new JacocoMavenManager();
-    private static TestManager testManager = new TestManager();
+    private static final CodeCoverage codeCoverage = new CodeCoverage();
+    private static final JacocoMavenManager jacocoMavenManager = new JacocoMavenManager();
+    private static final TestManager testManager = new TestManager();
 
     protected List<CoverNode> coverNodes;
     protected List<String> errorMessages;
@@ -29,7 +29,7 @@ public class Runner {
 
     public List<CoverNode> getCoverNodes() {
         if (this.coverNodes == null) {
-            this.run();
+            this.runWithJacoco();
         }
         return this.coverNodes;
     }
@@ -41,7 +41,7 @@ public class Runner {
         return this.errorMessages;
     }
 
-    private void run() {
+    private void runWithJacoco() {
         //add Jacoco plugin
         try {
             jacocoMavenManager.addJacocoFeatureToMaven(this.revDir);
@@ -49,10 +49,14 @@ public class Runner {
             e.printStackTrace();
         }
         // execute the test
+        run();
+    }
+
+    public void run() {
         String buildCommand = "mvn compile";
-        String testCommand = "mvn test -Dtest="+this.testCase+" "+"-Dmaven.test.failure.ignore=true";
+        String testCommand = "mvn test -Dtest=" + this.testCase + " " + "-Dmaven.test.failure.ignore=true";
         try {
-        	new Executor().setDirectory(this.revDir).exec(buildCommand);
+            new Executor().setDirectory(this.revDir).exec(buildCommand);
             new Executor().setDirectory(this.revDir).exec(testCommand, 5);
             this.coverNodes = codeCoverage.readJacocoReports(this.revDir);
             this.errorMessages = testManager.getErrors(this.revDir);
