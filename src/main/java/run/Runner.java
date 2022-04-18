@@ -50,6 +50,7 @@ public class Runner {
         }
         // execute the test
         run();
+        this.coverNodes = codeCoverage.readJacocoReports(this.revDir);
     }
 
     public void run() {
@@ -58,7 +59,6 @@ public class Runner {
         try {
             new Executor().setDirectory(this.revDir).exec(buildCommand);
             new Executor().setDirectory(this.revDir).exec(testCommand, 5);
-            this.coverNodes = codeCoverage.readJacocoReports(this.revDir);
             this.errorMessages = testManager.getErrors(this.revDir);
         } catch (TimeoutException ex) {
             this.errorMessages = new ArrayList<>();
