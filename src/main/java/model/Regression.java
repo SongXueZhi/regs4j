@@ -46,4 +46,12 @@ public class Regression {
     public void setWork(Revision work) {
         this.work = work;
     }
+    
+    public String toString() {
+    	StringBuilder sb = new StringBuilder();
+    	sb.append("rfc: " + rfc);
+    	sb.append(" | ric: " + ric);
+    	sb.append(" | testcase: " + testCase);
+    	return sb.toString();
+    }
 }

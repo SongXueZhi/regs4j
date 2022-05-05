@@ -47,6 +47,12 @@
             <artifactId>org.eclipse.jgit</artifactId>
             <version>5.9.0.202009080501-r</version>
         </dependency>
+        
+        <dependency>
+	       <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-nop</artifactId>
+		    <version>1.7.36</version>
+		</dependency>
 
     </dependencies>
 </project>

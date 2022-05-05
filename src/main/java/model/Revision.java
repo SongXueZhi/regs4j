@@ -43,5 +43,9 @@ public class Revision {
     public List<ChangedFile> getChangedFiles() {
         return changedFiles;
     }
+    
+    public String toString() {
+    	return this.commitID;
+    }
 
 }

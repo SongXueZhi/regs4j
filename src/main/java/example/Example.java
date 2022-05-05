@@ -121,6 +121,7 @@ public class Example {
         }
         System.out.println();
     }
+    
 
     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
         migrator.equipRfcWithChangeInfo(rfc);
@@ -130,7 +131,7 @@ public class Example {
         });
     }
 
-    static double similarityScore(List<Methodx> rfcMethods, List<Methodx> ricMethods) {
+    public static double similarityScore(List<Methodx> rfcMethods, List<Methodx> ricMethods) {
         double common = 0.0;
         for (Methodx rfcMethod : rfcMethods) {
         	if (rfcMethod == null) {

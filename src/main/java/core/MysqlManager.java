@@ -113,4 +113,20 @@ public class MysqlManager {
         }
         return regressionList;
     }
+    
+    public static List<String> selectProjects(String sql) {
+    	List<String> result = new ArrayList<>();
+    	try {
+    		getStatement();
+    		ResultSet rs = statement.executeQuery(sql);
+    		while (rs.next()) {
+    			result.add(rs.getString("project_full_name"));
+    		}
+    	} catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            closed();
+        }
+    	return result;
+    }
 }

@@ -4,6 +4,14 @@ import java.util.Collection;
 import java.util.StringJoiner;
 
 public class StringUtil {
+    /**
+     * Compares the similarity between two strings using OSA Damerau-Levenshtein distance. A value between 0 to 1
+     * will be returned where 0 means that the two strings has no similarity at all while 1 means that the two strings
+     * are exactly the same.
+     * @param s1 the first string to compare
+     * @param s2 the second string to compare
+     * @return the similarity value between the two strings
+     */
     public static double editDistance(String s1, String s2) {
         /* implements OSA Damerau-Levenshtein distance from  
          * https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance#Optimal_string_alignment_distance */
