@@ -36,7 +36,6 @@ public class CLI {
     static MavenManager mvnManager = new MavenManager();
     
     static List<Regression> regressionList = null;
-    static boolean[] hasCheckedOut = null;
     static String projectFullName = null;
     static int targetIdx = -1;
 
@@ -79,10 +78,12 @@ public class CLI {
 						try {
 							index = Integer.parseInt(inputs[1]);
 							checkout(index);
+						} catch (NullPointerException e) {
+							System.out.println("Please specify a project before checking out a bug.");
 						} catch (NumberFormatException e) {
 							System.out.println("Invalid index: " + inputs[1]);
 						} catch (IndexOutOfBoundsException e) {
-							System.out.println(String.format("Invalid index %d as there are only %d regressions for project %s", 
+							System.out.println(String.format("Invalid index %d as there are only %d regressions for project %s.", 
 															index, regressionList.size(), projectFullName));
 						}
 						
@@ -138,7 +139,7 @@ public class CLI {
 		System.out.println("Using project: " + projectFullName);
 		System.out.print("Retrieving regressions...");
         regressionList = MysqlManager.selectRegressions("select bfc,buggy,bic,work,testcase from regressions where project_full_name='" + projectFullName + "'");
-        hasCheckedOut = new boolean[regressionList.size()];
+        targetIdx = -1;
         System.out.println(" " + regressionList.size() + " regressions found");
 	}
 	
@@ -151,9 +152,9 @@ public class CLI {
 	}
 	
 	private static void checkout(int i) {
+		Regression target = regressionList.get(i-1);
 		System.out.println(String.format("Checking out %s regression %d", projectFullName, i));
 		targetIdx = i;
-		Regression target = regressionList.get(i-1);
 		File projectDir = sourceCodeManager.getProjectDir(projectFullName);
 		
 		Revision rfc = target.getRfc();
@@ -168,13 +169,16 @@ public class CLI {
         
         List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[] {ric});
         migrateTestAndDependency(rfc, needToTestMigrateRevisionList, target.getTestCase());
-        hasCheckedOut[i-1] = true;
         
         System.out.println("rfc directory: " + rfcDir.toString());
         System.out.println("ric directory: " + ricDir.toString());
 	}
 	
 	private static void similarity() {
+		if (projectFullName == null || targetIdx == -1) {
+			System.out.println("Please checkout a regression bug before calculating the similarity.");
+			return;
+		}
 		System.out.println(String.format("Calculating similarity score for %s regression bug %d...", projectFullName, targetIdx));
 		Regression target = regressionList.get(targetIdx-1);
 		
