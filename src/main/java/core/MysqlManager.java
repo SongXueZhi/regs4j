@@ -113,6 +113,30 @@ public class MysqlManager {
         }
         return regressionList;
     }
+
+    public static List<Regression> getRegressions(String sql) {
+        List<Regression> regressionList = new ArrayList<>();
+        try {
+            getStatement();
+            ResultSet rs = statement.executeQuery(sql);
+            while (rs.next()) {
+                Regression regression = new Regression();
+                regression.setRfc(new Revision(rs.getString("bfc"), "rfc"));
+                regression.setBuggy(new Revision(rs.getString("buggy"), "buggy"));
+                regression.setRic(new Revision(rs.getString("bic"), "ric"));
+                regression.setWork(new Revision(rs.getString("work"), "work"));
+                regression.setTestCase(rs.getString("testcase").split(";")[0]);
+                regression.setProjectFullName(rs.getString("project_full_name"));
+                regression.setErrorType(rs.getString("error_type"));
+                regressionList.add(regression);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            closed();
+        }
+        return regressionList;
+    }
     
     public static List<String> selectProjects(String sql) {
     	List<String> result = new ArrayList<>();
