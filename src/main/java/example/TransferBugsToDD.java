@@ -59,7 +59,7 @@ public class TransferBugsToDD {
             migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
 
             //2.create symbolicLink for good and bad
-//            sourceCodeManager.symbolicLink(projectFullName,ric, work);
+            sourceCodeManager.symbolicLink(projectFullName,ric, work);
 
             //3.create sh(build.sh&test.sh)
             sourceCodeManager.createShell(projectFullName,"ric",regression.getTestCase(),regression.getErrorType());
