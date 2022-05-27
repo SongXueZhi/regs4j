@@ -6,6 +6,8 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class SourceCodeManager {
 
@@ -39,6 +41,7 @@ public class SourceCodeManager {
         return null;
     }
 
+    //download source project
     public File getProjectDir(String projectFullName) {
 
         String projectDirName = projectFullName.replace("/", "_");
@@ -55,6 +58,12 @@ public class SourceCodeManager {
             }
         }
         return null;
+    }
+
+    public File getMetaProjectDir(String projectFullName) {
+        String projectDirName = projectFullName.replace("/", "_");
+        checkRequiredDir();
+        return new File(metaProjectsDirPath + File.separator + projectDirName);
     }
 
     private void checkRequiredDir() {
@@ -77,6 +86,66 @@ public class SourceCodeManager {
             }
         } else {
             cacheProjectsDir.mkdirs();
+        }
+    }
+
+    public void symbolicLink(String projectFullName, Revision ric, Revision work) throws IOException {
+        String projectDirName = projectFullName.replace("/", "_");
+        File badSourceFile = ric.getLocalCodeDir();
+        File goodSourceFile = work.getLocalCodeDir();
+        String badFlag = "bad.link";
+        String goodFlag = "good.link";
+        File badLink = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + badFlag);
+
+        File goodLink = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + goodFlag);
+        Path badSource = badSourceFile.toPath();
+        Path goodSource = goodSourceFile.toPath();
+        Path bLink = badLink.toPath();
+        Path gLink = goodLink.toPath();
+        Files.createSymbolicLink(bLink, badSource);
+        Files.createSymbolicLink(gLink, goodSource);
+    }
+
+    public void createShell(String projectFullName, String revisionName, String testcase, String errorType) {
+        String projectDirName = projectFullName.replace("/", "_");
+        File buildFile = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + revisionName, "build.sh");
+        File testFile = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + revisionName, "test.sh");
+        if (!buildFile.exists()) {
+            try {
+                buildFile.createNewFile();
+                String s1 = "#!/bin/bash";
+                String s2 = "mvn clean compile test-compile &> /dev/null";
+                FileUtils.write(buildFile, s1 + "\n" + s2, "UTF-8");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (!testFile.exists()) {
+            try {
+                testFile.createNewFile();
+                String s1 = "#!/bin/bash" + "\n";
+                String s2 = "_OUT=$(timeout 300 mvn test -Dtest=" + testcase + "test 2>&1)" + "\n";
+                String s3 = "SUCCESS=$(echo ${_OUT} | grep -c 'BUILD SUCCESS')" + "\n";
+                String s4 = "FAIL=$(echo ${_OUT} | grep -c '" + errorType + "')" + "\n";
+                String s5 = "if\n" +
+                        " [ \"${SUCCESS}\" = '1' ]; then\n" +
+                        "    PASS='1'\n" +
+                        "else\n" +
+                        "    PASS='0'\n" +
+                        "fi\n" +
+                        "\n" +
+                        "if [ ${PASS} = '1' -a ${FAIL} = '0' ]; then\n" +
+                        "    /bin/echo -n 'PASS'\n" +
+                        "elif [ ${FAIL} = '1' ]; then\n" +
+                        "    /bin/echo -n 'FAIL'\n" +
+                        "else\n" +
+                        "    /bin/echo -n 'UNRESOLVED'\n" +
+                        "fi";
+                FileUtils.write(testFile, s1 + s2 + s3 + s4 + s5, "UTF-8");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 

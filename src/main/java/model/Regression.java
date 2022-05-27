@@ -6,8 +6,26 @@ public class Regression {
     Revision ric;
     Revision work;
     String testCase;
+    String projectFullName;
+    String errorType;
 
-    public String getTestCase() {
+    public String getProjectFullName() {
+		return projectFullName;
+	}
+
+	public void setProjectFullName(String projectFullName) {
+		this.projectFullName = projectFullName;
+	}
+
+	public String getErrorType() {
+		return errorType;
+	}
+
+	public void setErrorType(String errorType) {
+		this.errorType = errorType;
+	}
+
+	public String getTestCase() {
         return testCase;
     }
 
