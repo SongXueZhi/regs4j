@@ -22,11 +22,11 @@ public class TransferBugsToDD {
 
 
     public static void main(String[] args) throws IOException {
-        chckout();
+        checkout();
 
     }
 
-    static void chckout() throws IOException {
+    static void checkout() throws IOException {
         //select所有error不为空的，download项目并测试用例迁移
         List<Regression> regressionList = MysqlManager.getRegressions("select bfc,buggy,bic,work,testcase,regressions.project_full_name,results.error_type from regressions\n" +
                 "inner join results\n" +
