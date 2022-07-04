@@ -98,6 +98,7 @@ public class CLI {
                         break;
                     case "predd":
 						TransferBugsToDD.checkout(inputs[1]);
+                        break;
                     case "exit":
                         run = false;
                         break;

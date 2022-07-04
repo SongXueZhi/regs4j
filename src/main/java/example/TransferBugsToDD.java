@@ -34,7 +34,7 @@ public class TransferBugsToDD {
             //File projectDir = sourceCodeManager.getProjectDir(projectFullName);
 
             //already have source project
-            File projectDir = sourceCodeManager.getMetaProjectDir(projectFullName);
+            File projectDir = sourceCodeManager.getProjectDir(projectFullName);
 
             //bfc作为基准进行测试用例迁移
             Revision rfc = regression.getRfc();

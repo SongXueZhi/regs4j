@@ -60,12 +60,6 @@ public class SourceCodeManager {
         return null;
     }
 
-    public File getMetaProjectDir(String projectFullName) {
-        String projectDirName = projectFullName.replace("/", "_");
-        checkRequiredDir();
-        return new File(metaProjectsDirPath + File.separator + projectDirName);
-    }
-
     private void checkRequiredDir() {
         File metaProjectsDir = new File(metaProjectsDirPath);
 
@@ -108,8 +102,12 @@ public class SourceCodeManager {
 
     public void createShell(String projectFullName, String revisionName, String testcase, String errorType) {
         String projectDirName = projectFullName.replace("/", "_");
-        File buildFile = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + revisionName, "build.sh");
-        File testFile = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + revisionName, "test.sh");
+        File buildFile =
+                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + revisionName,
+                        "build.sh");
+        File testFile =
+                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + revisionName,
+                        "test.sh");
         if (!buildFile.exists()) {
             try {
                 buildFile.createNewFile();
