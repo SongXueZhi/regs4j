@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class TransferBugsToDD {
-    // TODO SunYujie prepare the data for DDJ and DDP
     // prepare ddj input dir and build.sh test.sh
 
     static Reducer reducer = new Reducer();
@@ -21,17 +20,12 @@ public class TransferBugsToDD {
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
 
 
-    public static void main(String[] args) throws IOException {
-        checkout();
-
-    }
-
-    static void checkout() throws IOException {
+    static void checkout(String projectName) throws IOException {
         //select所有error不为空的，download项目并测试用例迁移
         List<Regression> regressionList = MysqlManager.getRegressions("select bfc,buggy,bic,work,testcase,regressions.project_full_name,results.error_type from regressions\n" +
                 "inner join results\n" +
                 "on regressions.bfc = results.rfc_id\n" +
-                "where results.error_type is not null and regressions.project_full_name = \"ktuukkan/marine-api\"");
+                "where results.error_type is not null and regressions.project_full_name ='"+projectName+"' limit 1");
 
         for (Regression regression : regressionList) {
             //1. checkout bic和work，test migration
