@@ -28,6 +28,7 @@ public class TransferBugsToDD {
                 "where results.error_type is not null and regressions.project_full_name ='"+projectName+"' limit 1");
 
         for (Regression regression : regressionList) {
+
             //1. checkout bic和work，test migration
             String projectFullName = regression.getProjectFullName();
             //need download source project
@@ -56,8 +57,9 @@ public class TransferBugsToDD {
             sourceCodeManager.symbolicLink(projectFullName,ric, work);
 
             //3.create sh(build.sh&test.sh)
-            sourceCodeManager.createShell(projectFullName,"ric",regression.getTestCase(),regression.getErrorType());
-            sourceCodeManager.createShell(projectFullName,"work",regression.getTestCase(),regression.getErrorType());
+            sourceCodeManager.createShell(projectFullName,ric,regression.getTestCase(),
+                    regression.getErrorType());
+            sourceCodeManager.createShell(projectFullName,work,regression.getTestCase(),regression.getErrorType());
 
         }
     }

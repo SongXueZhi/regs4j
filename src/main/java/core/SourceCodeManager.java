@@ -3,6 +3,7 @@ package core;
 import core.git.GitUtils;
 import model.Revision;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +24,7 @@ public class SourceCodeManager {
         }
         projectCacheDir.mkdirs();
 
-        File revisionDir = new File(projectCacheDir, revision.getName());
+        File revisionDir = new File(projectCacheDir, StringUtils.left(revision.getCommitID(),8));
         try {
             if (revisionDir.exists()) {
                 FileUtils.forceDelete(revisionDir);
@@ -87,8 +88,8 @@ public class SourceCodeManager {
         String projectDirName = projectFullName.replace("/", "_");
         File badSourceFile = ric.getLocalCodeDir();
         File goodSourceFile = work.getLocalCodeDir();
-        String badFlag = "bad.link";
-        String goodFlag = "good.link";
+        String badFlag = StringUtils.left(ric.getCommitID(),8)+"_b";
+        String goodFlag = StringUtils.left(work.getCommitID(),8)+"_g";
         File badLink = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + badFlag);
 
         File goodLink = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + goodFlag);
@@ -100,13 +101,13 @@ public class SourceCodeManager {
         Files.createSymbolicLink(gLink, goodSource);
     }
 
-    public void createShell(String projectFullName, String revisionName, String testcase, String errorType) {
+    public void createShell(String projectFullName, Revision revision, String testcase, String errorType) {
         String projectDirName = projectFullName.replace("/", "_");
         File buildFile =
-                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + revisionName,
+                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + StringUtils.left(revision.getCommitID(),8),
                         "build.sh");
         File testFile =
-                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + revisionName,
+                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator +  StringUtils.left(revision.getCommitID(),8),
                         "test.sh");
         if (!buildFile.exists()) {
             try {
@@ -122,7 +123,7 @@ public class SourceCodeManager {
             try {
                 testFile.createNewFile();
                 String s1 = "#!/bin/bash" + "\n";
-                String s2 = "_OUT=$(timeout 300 mvn test -Dtest=" + testcase + "test 2>&1)" + "\n";
+                String s2 = "_OUT=$(timeout 300 mvn test -Dtest=" + testcase + " 2>&1)" + "\n";
                 String s3 = "SUCCESS=$(echo ${_OUT} | grep -c 'BUILD SUCCESS')" + "\n";
                 String s4 = "FAIL=$(echo ${_OUT} | grep -c '" + errorType + "')" + "\n";
                 String s5 = "if\n" +
