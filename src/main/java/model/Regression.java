@@ -1,6 +1,7 @@
 package model;
 
 public class Regression {
+    String id;
     Revision rfc;
     Revision buggy;
     Revision ric;
@@ -8,6 +9,14 @@ public class Regression {
     String testCase;
     String projectFullName;
     String errorType;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public String getProjectFullName() {
 		return projectFullName;

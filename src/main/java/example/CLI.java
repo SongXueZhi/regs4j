@@ -46,7 +46,7 @@ public class CLI {
         try {
             do {
                 System.out.print("RegMiner > ");
-                String input = sc.nextLine().toLowerCase().strip();
+                String input = sc.nextLine().strip();
                 if (input.length() == 0)
                     continue;
                 String[] inputs = input.split("\\s+");
@@ -99,6 +99,9 @@ public class CLI {
                     case "predd":
 						TransferBugsToDD.checkout(inputs[1]);
                         break;
+                    case "dd":
+                        DeltaDebugging.dd(inputs[1]);
+                        break;
                     case "exit":
                         run = false;
                         break;
@@ -108,7 +111,7 @@ public class CLI {
 
             } while (run);
         } catch (Exception e) {
-            System.out.println("An unexpected error has occured.");
+            e.printStackTrace();
         } finally {
             sc.close();
             System.out.println("Goodbye!");
@@ -163,12 +166,12 @@ public class CLI {
         File projectDir = sourceCodeManager.getProjectDir(projectFullName);
 
         Revision rfc = target.getRfc();
-        File rfcDir = sourceCodeManager.checkout(rfc, projectDir, projectFullName);
+        File rfcDir = sourceCodeManager.checkout(target.getId(),rfc, projectDir, projectFullName);
         rfc.setLocalCodeDir(rfcDir);
         target.setRfc(rfc);
 
         Revision ric = target.getRic();
-        File ricDir = sourceCodeManager.checkout(ric, projectDir, projectFullName);
+        File ricDir = sourceCodeManager.checkout(target.getId(),ric, projectDir, projectFullName);
         ric.setLocalCodeDir(ricDir);
         target.setRic(ric);
 

@@ -52,19 +52,19 @@ public class Example {
         for (Regression regression : regressionList) {
             //prepare four version
             Revision rfc = regression.getRfc();
-            File rfcDir = sourceCodeManager.checkout(rfc, projectDir, projectFullName);
+            File rfcDir = sourceCodeManager.checkout(regression.getId(),rfc, projectDir, projectFullName);
             rfc.setLocalCodeDir(rfcDir);
 
             Revision buggy = regression.getBuggy();
-            File buggyDir = sourceCodeManager.checkout(buggy, projectDir, projectFullName);
+            File buggyDir = sourceCodeManager.checkout(regression.getId(),buggy, projectDir, projectFullName);
             buggy.setLocalCodeDir(buggyDir);
 
             Revision ric = regression.getRic();
-            File ricDir = sourceCodeManager.checkout(ric, projectDir, projectFullName);
+            File ricDir = sourceCodeManager.checkout(regression.getId(),ric, projectDir, projectFullName);
             ric.setLocalCodeDir(ricDir);
 
             Revision work = regression.getWork();
-            File workDir = sourceCodeManager.checkout(work, projectDir, projectFullName);
+            File workDir = sourceCodeManager.checkout(regression.getId(),work, projectDir, projectFullName);
             work.setLocalCodeDir(workDir);
             
             count += 1;

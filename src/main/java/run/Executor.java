@@ -75,6 +75,7 @@ public class Executor {
             while ((line = bufferReader.readLine()) != null) {
                 builder.append("\n").append(line);
             }
+            int a = process.waitFor();
         } catch (IOException | InterruptedException ex) {
             ex.printStackTrace();
         } finally {

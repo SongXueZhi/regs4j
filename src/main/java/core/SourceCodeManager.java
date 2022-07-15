@@ -13,9 +13,9 @@ import java.nio.file.Path;
 public class SourceCodeManager {
 
     private final static String metaProjectsDirPath = Configs.workSpace + File.separator + "meta_projects";
-    private final static String cacheProjectsDirPath = Configs.workSpace + File.separator + "transfer_cache";
+    private final static String cacheProjectsDirPath = Configs.workSpace;
 
-    public File checkout(Revision revision, File projectFile, String projectFullName) {
+    public File checkout(String regressionID,Revision revision, File projectFile, String projectFullName) {
         //copy source code from meta project dir
         String projectDirName = projectFullName.replace("/", "_");
         File projectCacheDir = new File(cacheProjectsDirPath + File.separator, projectDirName);
@@ -24,7 +24,7 @@ public class SourceCodeManager {
         }
         projectCacheDir.mkdirs();
 
-        File revisionDir = new File(projectCacheDir, StringUtils.left(revision.getCommitID(),8));
+        File revisionDir = new File(projectCacheDir,regressionID+"_"+revision.getName());
         try {
             if (revisionDir.exists()) {
                 FileUtils.forceDelete(revisionDir);
@@ -84,12 +84,12 @@ public class SourceCodeManager {
         }
     }
 
-    public void symbolicLink(String projectFullName, Revision ric, Revision work) throws IOException {
+    public void symbolicLink(String regressionID,String projectFullName, Revision ric, Revision work) throws IOException {
         String projectDirName = projectFullName.replace("/", "_");
         File badSourceFile = ric.getLocalCodeDir();
         File goodSourceFile = work.getLocalCodeDir();
-        String badFlag = StringUtils.left(ric.getCommitID(),8)+"_b";
-        String goodFlag = StringUtils.left(work.getCommitID(),8)+"_g";
+        String badFlag = regressionID+"_"+ric.getName()+"_b";
+        String goodFlag = regressionID+"_"+work.getName()+"_g";
         File badLink = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + badFlag);
 
         File goodLink = new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + goodFlag);
@@ -101,13 +101,14 @@ public class SourceCodeManager {
         Files.createSymbolicLink(gLink, goodSource);
     }
 
-    public void createShell(String projectFullName, Revision revision, String testcase, String errorType) {
+    public void createShell(String regressionID, String projectFullName, Revision revision, String testcase,
+                            String errorType) {
         String projectDirName = projectFullName.replace("/", "_");
         File buildFile =
-                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + StringUtils.left(revision.getCommitID(),8),
+                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + regressionID+"_"+revision.getName(),
                         "build.sh");
         File testFile =
-                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator +  StringUtils.left(revision.getCommitID(),8),
+                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator +  regressionID+"_"+revision.getName(),
                         "test.sh");
         if (!buildFile.exists()) {
             try {
@@ -146,6 +147,12 @@ public class SourceCodeManager {
             }
 
         }
+        buildFile.setExecutable(true,false);
+        buildFile.setReadable(true,false);
+        buildFile.setWritable(true,false);
+        testFile.setExecutable(true,false);
+        testFile.setReadable(true,false);
+        testFile.setWritable(true,false);
     }
 
 }

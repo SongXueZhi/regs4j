@@ -8,7 +8,6 @@ import model.Regression;
 import model.Revision;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -19,48 +18,56 @@ public class TransferBugsToDD {
     static Migrator migrator = new Migrator();
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
 
+    static void checkout(String projectName) {
 
-    static void checkout(String projectName) throws IOException {
         //select所有error不为空的，download项目并测试用例迁移
-        List<Regression> regressionList = MysqlManager.getRegressions("select bfc,buggy,bic,work,testcase,regressions.project_full_name,results.error_type from regressions\n" +
+        String sql = "select regression_uuid,bfc,buggy,bic,work," +
+                "testcase," +
+                "regression.project_full_name,results.error_type from regression\n" +
                 "inner join results\n" +
-                "on regressions.bfc = results.rfc_id\n" +
-                "where results.error_type is not null and regressions.project_full_name ='"+projectName+"' limit 1");
+                "on regression.bfc = results.rfc_id\n" +
+                "where results.error_type is not null and regression.project_full_name ='" + projectName +
+                "'";
+        List<Regression> regressionList = MysqlManager.getRegressions(sql);
+        try {
+            for (int i = 0; i < regressionList.size(); i++) {
+                Regression regression = regressionList.get(i);
+                //1. checkout bic和work，test migration
+                String projectFullName = regression.getProjectFullName();
+                //need download source project
+                //File projectDir = sourceCodeManager.getProjectDir(projectFullName);
 
-        for (Regression regression : regressionList) {
+                //already have source project
+                File projectDir = sourceCodeManager.getProjectDir(projectFullName);
 
-            //1. checkout bic和work，test migration
-            String projectFullName = regression.getProjectFullName();
-            //need download source project
-            //File projectDir = sourceCodeManager.getProjectDir(projectFullName);
+                //bfc作为基准进行测试用例迁移
+                Revision rfc = regression.getRfc();
+                File rfcDir = sourceCodeManager.checkout(regression.getId(), rfc, projectDir, projectFullName);
+                rfc.setLocalCodeDir(rfcDir);
 
-            //already have source project
-            File projectDir = sourceCodeManager.getProjectDir(projectFullName);
+                Revision ric = regression.getRic();
+                File ricDir = sourceCodeManager.checkout(regression.getId(), ric, projectDir, projectFullName);
+                ric.setLocalCodeDir(ricDir);
 
-            //bfc作为基准进行测试用例迁移
-            Revision rfc = regression.getRfc();
-            File rfcDir = sourceCodeManager.checkout(rfc, projectDir, projectFullName);
-            rfc.setLocalCodeDir(rfcDir);
+                Revision work = regression.getWork();
+                File workDir = sourceCodeManager.checkout(regression.getId(), work, projectDir, projectFullName);
+                work.setLocalCodeDir(workDir);
 
-            Revision ric = regression.getRic();
-            File ricDir = sourceCodeManager.checkout(ric, projectDir, projectFullName);
-            ric.setLocalCodeDir(ricDir);
+                List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, work);
+                migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
 
-            Revision work = regression.getWork();
-            File workDir = sourceCodeManager.checkout(work, projectDir, projectFullName);
-            work.setLocalCodeDir(workDir);
+//            //2.create symbolicLink for good and bad
+//            sourceCodeManager.symbolicLink(regression.getId(),projectFullName, ric, work);
 
-            List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{ric, work});
-            migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
+                //3.create sh(build.sh&test.sh)
+                sourceCodeManager.createShell(regression.getId(), projectFullName, ric, regression.getTestCase(),
+                        regression.getErrorType());
+                sourceCodeManager.createShell(regression.getId(), projectFullName, work, regression.getTestCase(),
+                        regression.getErrorType());
 
-            //2.create symbolicLink for good and bad
-            sourceCodeManager.symbolicLink(projectFullName,ric, work);
-
-            //3.create sh(build.sh&test.sh)
-            sourceCodeManager.createShell(projectFullName,ric,regression.getTestCase(),
-                    regression.getErrorType());
-            sourceCodeManager.createShell(projectFullName,work,regression.getTestCase(),regression.getErrorType());
-
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

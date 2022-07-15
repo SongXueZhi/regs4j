@@ -21,10 +21,7 @@ package core;
 import model.Regression;
 import model.Revision;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -121,6 +118,7 @@ public class MysqlManager {
             ResultSet rs = statement.executeQuery(sql);
             while (rs.next()) {
                 Regression regression = new Regression();
+                regression.setId(rs.getString("regression_uuid"));
                 regression.setRfc(new Revision(rs.getString("bfc"), "rfc"));
                 regression.setBuggy(new Revision(rs.getString("buggy"), "buggy"));
                 regression.setRic(new Revision(rs.getString("bic"), "ric"));
@@ -136,6 +134,28 @@ public class MysqlManager {
             closed();
         }
         return regressionList;
+    }
+    public static void  insertDD(String uuid,String revision,String cc_ddmin,String cc_ddj) throws Exception {
+        if (conn == null) {
+            getConn();
+        }
+        PreparedStatement pstmt = null;
+        try {
+            pstmt =conn.prepareStatement("insert into dd(regressionId,revision," +
+                    "cc_ddmin,cc_ddj) values(?," +
+                    "?,?,?)");
+            pstmt.setString(1,uuid);
+            pstmt.setString(2,revision);
+            pstmt.setString(3,cc_ddmin);
+            pstmt.setString(4,cc_ddj);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }finally {
+            if (pstmt!=null){
+                pstmt.close();
+            }
+        }
     }
     
     public static List<String> selectProjects(String sql) {
