@@ -84,3 +84,19 @@ RegMiner > similarity
 Calculating similarity score for univocity/univocity-parsers regression bug 10...
 
 Similarity score: 0.6949152542372882
+
+
+### Delta debugging
+Now, we support ddj and ddmin.
+
+** Step1:** Transfer reg4j to delta debugging data format by command ``predd {username}/{project name}``, example:
+
+RegMiner > predd uniVocity/univocity-parsers
+
+** Step2:** Run delta debugging on project by command ``dd {username}/{project name}``, example:
+
+RegMiner > dd uniVocity/univocity-parsers
+
+
+
+
