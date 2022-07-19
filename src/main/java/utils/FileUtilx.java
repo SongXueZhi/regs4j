@@ -1,5 +1,7 @@
 package utils;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -72,11 +74,16 @@ public class FileUtilx {
         return result;
     }
 
+    //todo
+    public static void writListToFile(String path,List<String> line) {
+
+    }
+
     public static Boolean moveFileToTarget(String fileFullNameCurrent, String fileFullNameTarget) {
         boolean ismove = false;
         File oldName = new File(fileFullNameCurrent);
         if (!oldName.exists()) {
-            return ismove;
+            return false;
         }
         if (oldName.isDirectory()) {
             return false;
@@ -96,6 +103,34 @@ public class FileUtilx {
         }
         ismove = oldName.renameTo(newName);
         return ismove;
+    }
+
+    public static void copyFileToTarget(String fileFullNameCurrent, String fileFullNameTarget){
+        try{
+            File oldName = new File(fileFullNameCurrent);
+            if (!oldName.exists()) {
+                return;
+            }
+            if (oldName.isDirectory()) {
+                return;
+            }
+            File newName = new File(fileFullNameTarget);
+            if (newName.exists()) {
+                return;
+            }
+            if (newName.isDirectory()) {
+                return;
+            }
+            File parentDir = new File(newName.getParent());
+            if (!parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+            FileUtils.copyDirectory(oldName, newName);
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
 }

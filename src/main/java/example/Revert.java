@@ -34,7 +34,7 @@ public class Revert {
 
         Set<String> uuid = readSetFromFile("uuid.txt");
         regressionList.removeIf(regression -> !uuid.contains(regression.getId()));
-        Regression regressionTest = regressionList.get(0);
+        Regression regressionTest = regressionList.get(2);
 
         Revision rfc = regressionTest.getRfc();
         File rfcDir = sourceCodeManager.checkout(regressionTest.getId(), rfc, projectDir, projectName);
@@ -84,51 +84,61 @@ public class Revert {
 
             for (Map.Entry<String,List<HunkEntity>> entry: stringListMap.entrySet()){
                 System.out.println(entry.getKey() + entry.getValue());
-                revertFile(tmpPath,entry.getKey(),entry.getValue());
+                revertFile(tmpPath,entry.getValue()).size();
             }
         }catch (Exception exception){
             exception.printStackTrace();
         }
     }
 
-//    public final Edit.Type getType() {
-//        if (beginA < endA) {
-//            if (beginB < endB) {
-//                return Edit.Type.REPLACE;
-//            }
-//            return Edit.Type.DELETE;
-//
-//        }
-//        if (beginB < endB) {
-//            return Edit.Type.INSERT;
-//        }
-//        // beginB == endB)
-//        return Edit.Type.EMPTY;
-//    }
-
-    public static void revertFile(String srcPath, String filePath, List<HunkEntity> hunkEntities){
-        List<String> line = FileUtilx.readListFromFile(filePath);
-        List<Integer> index = new ArrayList<>(line.size());
-        for(HunkEntity hunkEntity: hunkEntities){
-            if(!Objects.equals(hunkEntity.getNewPath(), hunkEntity.getOldPath())){
-                String fileFullOldPath = srcPath + File.separator +hunkEntity.getOldPath();
-                String fileFullNewPath = srcPath + File.separator +hunkEntity.getNewPath();
-                if(!FileUtilx.moveFileToTarget(fileFullOldPath,fileFullNewPath)){
-                    System.out.println("文件位置变化且移动失败");
-                }
+    /**
+     * 处理一个文件的revert
+     * @param tmpPath 临时项目的全路径，后缀是"_ric_tmp"
+     * @param hunkEntities 需要退回的hunk
+     */
+    public static List<String> revertFile(String tmpPath, List<HunkEntity> hunkEntities){
+        HunkEntity tmpHunk = hunkEntities.get(0);
+        if(!Objects.equals(tmpHunk.getNewPath(), tmpHunk.getOldPath())){
+            String fileFullOldPath = tmpPath.replace("_ric_tmp","_work") + File.separator +tmpHunk.getOldPath();
+            String fileFullNewPath = tmpPath + File.separator +tmpHunk.getOldPath();
+            FileUtilx.copyFileToTarget(fileFullOldPath,fileFullNewPath);
+        }
+        List<String> line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getNewPath());
+        System.out.println("old: " + line.size());
+        hunkEntities.sort(new Comparator<HunkEntity>() {
+            @Override
+            public int compare(HunkEntity p1, HunkEntity p2) {
+                return p2.getBeginA() - p1.getBeginA();
             }
+        });
+
+        for(HunkEntity hunkEntity: hunkEntities){
             HunkEntity.HunkType type = hunkEntity.getType();
             switch (type){
                 case DELETE:
-
+                    List<String> newLine = getLinesFromWorkVersion(tmpPath.replace("_ric_tmp","_work"),hunkEntity);
+                    line.addAll(hunkEntity.getBeginB(),newLine);
                     break;
                 case INSERT:
+                    line.subList(hunkEntity.getBeginB(), hunkEntity.getEndB()).clear();
                     break;
                 case REPLACE:
+                    line.subList(hunkEntity.getBeginB(), hunkEntity.getEndB()).clear();
+                    List<String> replaceLine = getLinesFromWorkVersion(tmpPath.replace("_ric_tmp","_work"),hunkEntity);
+                    line.addAll(hunkEntity.getBeginB(),replaceLine);
                     break;
                 case EMPTY:
                     break;
             }
         }
+        System.out.println("revert: " + line.size());
+        return line;
+    }
+
+    public static List<String> getLinesFromWorkVersion(String workPath, HunkEntity hunk){
+        List<String> result = new ArrayList<>();
+        List<String> line = FileUtilx.readListFromFile(workPath + File.separator + hunk.getOldPath());
+        result = line.subList(hunk.getBeginA(), hunk.getEndA());
+        return result;
     }
 }
