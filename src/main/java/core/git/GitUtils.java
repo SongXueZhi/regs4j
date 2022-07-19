@@ -1,16 +1,23 @@
 package core.git;
 
+import model.HunkEntity;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.Edit;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.patch.FileHeader;
+import org.eclipse.jgit.patch.HunkHeader;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.util.io.DisabledOutputStream;
 
 import java.io.File;
+import java.util.LinkedList;
 import java.util.List;
 
 
@@ -51,6 +58,64 @@ public class GitUtils {
             exception.printStackTrace();
         }
         return null;
+    }
+
+    public static List<HunkEntity> getHunksBetweenCommits(File codeDir, String newID, String oldID) {
+        List<HunkEntity> result = new LinkedList<>();
+        try (Repository repository = RepositoryProvider.getRepoFromLocal(codeDir); Git git = new Git(repository);
+             DiffFormatter diffFormatter = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+            List<DiffEntry> diffEntries = git.diff().
+                    setOldTree(prepareTreeParser(repository,oldID)).
+                    setNewTree(prepareTreeParser(repository,newID)).
+                    call();
+            diffFormatter.setRepository(repository);
+            for (DiffEntry diffEntry: diffEntries) {
+                FileHeader fileHeader = diffFormatter.toFileHeader(diffEntry);
+                List<? extends HunkHeader> hunkHeaders = fileHeader.getHunks();
+                for (HunkHeader hunk : hunkHeaders) {
+                    for (Edit edit : hunk.toEditList()) {
+                        HunkEntity hunkEntity = new HunkEntity();
+                        hunkEntity.setOldPath(hunk.getFileHeader().getOldPath());
+                        hunkEntity.setNewPath(hunk.getFileHeader().getNewPath());
+                        hunkEntity.setBeginA(edit.getBeginA());
+                        hunkEntity.setBeginB(edit.getBeginB());
+                        hunkEntity.setEndA(edit.getEndA());
+                        hunkEntity.setEndB(edit.getEndB());
+                        hunkEntity.setType(edit.getType().toString());
+                        result.add(hunkEntity);
+                    }
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return result;
+    }
+
+    public static List<HunkEntity> getHunks(DiffEntry entry, File codeDir) {
+        List<HunkEntity> result = new LinkedList<>();
+        try (Repository repository = RepositoryProvider.getRepoFromLocal(codeDir); DiffFormatter diffFormatter = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+            diffFormatter.setRepository(repository);
+            FileHeader fileHeader = diffFormatter.toFileHeader(entry);
+            List<? extends HunkHeader> hunkHeaders = fileHeader.getHunks();
+            for (HunkHeader hunk : hunkHeaders) {
+                for (Edit edit: hunk.toEditList()) {
+                    HunkEntity hunkEntity = new HunkEntity();
+                    hunkEntity.setOldPath(hunk.getFileHeader().getOldPath());
+                    hunkEntity.setNewPath(hunk.getFileHeader().getNewPath());
+                    hunkEntity.setBeginA(edit.getBeginA());
+                    hunkEntity.setBeginB(edit.getBeginB());
+                    hunkEntity.setEndA(edit.getEndA());
+                    hunkEntity.setEndB(edit.getEndB());
+                    hunkEntity.setType(edit.getType().toString());
+                    result.add(hunkEntity);
+                }
+
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return result;
     }
 
     private static AbstractTreeIterator prepareTreeParser(Repository repository, String objectId) throws Exception {
