@@ -15,7 +15,7 @@ import java.util.Set;
 
 import static utils.FileUtilx.readSetFromFile;
 
-public class ProbddTest {
+public class HunkTest {
 
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
 

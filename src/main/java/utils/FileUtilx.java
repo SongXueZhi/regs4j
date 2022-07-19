@@ -2,7 +2,9 @@ package utils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class FileUtilx {
@@ -27,7 +29,7 @@ public class FileUtilx {
                 result = sb2.toString();
             }
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         return result;
     }
@@ -46,9 +48,54 @@ public class FileUtilx {
                 br.close();
             }
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         return result;
+    }
+
+    public static List<String> readListFromFile(String path) {
+        List<String> result = new ArrayList<>();
+        File file = new File(path);
+        try {
+            InputStream is = new FileInputStream(file);
+            if (file.exists() && file.isFile()) {
+                BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+                String line = null;
+                while ((line = br.readLine()) != null) {
+                    result.add(line);
+                }
+                br.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    public static Boolean moveFileToTarget(String fileFullNameCurrent, String fileFullNameTarget) {
+        boolean ismove = false;
+        File oldName = new File(fileFullNameCurrent);
+        if (!oldName.exists()) {
+            return ismove;
+        }
+        if (oldName.isDirectory()) {
+            return false;
+        }
+
+        File newName = new File(fileFullNameTarget);
+        if (newName.exists()) {
+            return false;
+        }
+        if (newName.isDirectory()) {
+            return false;
+        }
+        String parentFile = newName.getParent();
+        File parentDir = new File(parentFile);
+        if (!parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+        ismove = oldName.renameTo(newName);
+        return ismove;
     }
 
 }

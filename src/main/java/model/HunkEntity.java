@@ -14,7 +14,7 @@ public class HunkEntity {
     int endB;
     HunkType type;
 
-    enum HunkType{
+    public enum HunkType{
         DELETE,
         REPLACE,
         INSERT,
