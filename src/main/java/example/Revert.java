@@ -132,6 +132,7 @@ public class Revert {
             }
         }
         System.out.println("revert: " + line.size());
+        FileUtilx.writListToFile(tmpPath + File.separator +tmpHunk.getOldPath(),line);
         return line;
     }
 

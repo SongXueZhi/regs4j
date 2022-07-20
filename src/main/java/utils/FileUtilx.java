@@ -1,6 +1,7 @@
 package utils;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.output.WriterOutputStream;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -74,28 +75,36 @@ public class FileUtilx {
         return result;
     }
 
-    //todo
     public static void writListToFile(String path,List<String> line) {
-
+        File file = new File(path);
+        try {
+            FileOutputStream fos = new FileOutputStream(path,false);
+            if (file.exists() && file.isFile()) {
+                BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos, StandardCharsets.UTF_8));
+                for(String s:line) {
+                    bw.write(s);
+                    bw.newLine();
+                    bw.flush();
+                }
+                bw.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static Boolean moveFileToTarget(String fileFullNameCurrent, String fileFullNameTarget) {
         boolean ismove = false;
         File oldName = new File(fileFullNameCurrent);
-        if (!oldName.exists()) {
-            return false;
-        }
-        if (oldName.isDirectory()) {
+        if (!oldName.exists() || oldName.isDirectory()) {
             return false;
         }
 
         File newName = new File(fileFullNameTarget);
-        if (newName.exists()) {
+        if (newName.exists() || newName.isDirectory()) {
             return false;
         }
-        if (newName.isDirectory()) {
-            return false;
-        }
+
         String parentFile = newName.getParent();
         File parentDir = new File(parentFile);
         if (!parentDir.exists()) {
@@ -108,19 +117,14 @@ public class FileUtilx {
     public static void copyFileToTarget(String fileFullNameCurrent, String fileFullNameTarget){
         try{
             File oldName = new File(fileFullNameCurrent);
-            if (!oldName.exists()) {
-                return;
-            }
-            if (oldName.isDirectory()) {
+            if (!oldName.exists() || oldName.isDirectory()) {
                 return;
             }
             File newName = new File(fileFullNameTarget);
-            if (newName.exists()) {
+            if (newName.exists() || newName.isDirectory()) {
                 return;
             }
-            if (newName.isDirectory()) {
-                return;
-            }
+
             File parentDir = new File(newName.getParent());
             if (!parentDir.exists()) {
                 parentDir.mkdirs();
