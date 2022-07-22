@@ -85,6 +85,7 @@ Calculating similarity score for univocity/univocity-parsers regression bug 10..
 
 Similarity score: 0.6949152542372882
 
+```
 
 ### Delta debugging
 Now, we support ddj and ddmin.
