@@ -75,7 +75,7 @@ public class FileUtilx {
         return result;
     }
 
-    public static void writListToFile(String path,List<String> line) {
+    public static void writeListToFile(String path,List<String> line) {
         File file = new File(path);
         try {
             FileOutputStream fos = new FileOutputStream(path,false);

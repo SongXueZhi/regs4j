@@ -1,12 +1,17 @@
 package example;
 
+import core.Migrator;
 import core.MysqlManager;
+import core.Reducer;
 import core.SourceCodeManager;
+import core.coverage.model.CoverNode;
 import core.git.GitUtils;
 import model.HunkEntity;
 import model.Regression;
 import model.Revision;
 import org.apache.commons.io.FileUtils;
+import run.Executor;
+import run.Runner;
 import utils.FileUtilx;
 
 import java.io.File;
@@ -17,6 +22,9 @@ import static utils.FileUtilx.readSetFromFile;
 
 public class Revert {
 
+
+    static Reducer reducer = new Reducer();
+    static Migrator migrator = new Migrator();
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
 
     public static void main(String[] args) {
@@ -34,38 +42,54 @@ public class Revert {
 
         Set<String> uuid = readSetFromFile("uuid.txt");
         regressionList.removeIf(regression -> !uuid.contains(regression.getId()));
-        Regression regressionTest = regressionList.get(2);
+        for (int i = 0; i < regressionList.size(); i++) {
+            Regression regressionTest = regressionList.get(i);
+            System.out.println(regressionTest.getId());
 
-        Revision rfc = regressionTest.getRfc();
-        File rfcDir = sourceCodeManager.checkout(regressionTest.getId(), rfc, projectDir, projectName);
-        rfc.setLocalCodeDir(rfcDir);
+            Revision rfc = regressionTest.getRfc();
+            File rfcDir = sourceCodeManager.checkout(regressionTest.getId(), rfc, projectDir, projectName);
+            rfc.setLocalCodeDir(rfcDir);
 
-        Revision ric = regressionTest.getRic();
-        File ricDir = sourceCodeManager.checkout(regressionTest.getId(),ric, projectDir, projectName);
-        ric.setLocalCodeDir(ricDir);
+            Revision ric = regressionTest.getRic();
+            File ricDir = sourceCodeManager.checkout(regressionTest.getId(), ric, projectDir, projectName);
+            ric.setLocalCodeDir(ricDir);
 
-        Revision work = regressionTest.getWork();
-        File workDir = sourceCodeManager.checkout(regressionTest.getId(),work, projectDir, projectName);
-        work.setLocalCodeDir(workDir);
+            Revision work = regressionTest.getWork();
+            File workDir = sourceCodeManager.checkout(regressionTest.getId(), work, projectDir, projectName);
+            work.setLocalCodeDir(workDir);
 
-//        List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, work);
-//        migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
+            List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, work);
+            migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regressionTest.getTestCase());
 
 //            //2.create symbolicLink for good and bad
 //            sourceCodeManager.symbolicLink(regression.getId(),projectFullName, ric, work);
 
-        //3.create sh(build.sh&test.sh)
-        sourceCodeManager.createShell(regressionTest.getId(), projectName, ric, regressionTest.getTestCase(),
-                regressionTest.getErrorType());
-        sourceCodeManager.createShell(regressionTest.getId(), projectName, work, regressionTest.getTestCase(),
-                regressionTest.getErrorType());
+            //3.create sh(build.sh&test.sh)
+            sourceCodeManager.createShell(regressionTest.getId(), projectName, ric, regressionTest.getTestCase(),
+                    regressionTest.getErrorType());
+            sourceCodeManager.createShell(regressionTest.getId(), projectName, work, regressionTest.getTestCase(),
+                    regressionTest.getErrorType());
 
-        List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
-        //System.out.println(hunks);
+            List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
+            //System.out.println(hunks);
 
-        revert(ric,hunks);
+            revert(ric, hunks);
+            Executor executor = new Executor();
+            String tmpPath = ric.getLocalCodeDir().getParent() + File.separator + ric.getLocalCodeDir().getName() + "_tmp";
+            executor.setDirectory(new File(tmpPath));
+            String result = executor.exec("./build.sh; ./test.sh");
+            System.out.println(result);
+        }
     }
 
+
+    public static void revert(String path, List<HunkEntity> hunkEntities){
+        try{
+
+        }catch (Exception exception){
+            exception.printStackTrace();
+        }
+    }
     public static void revert(Revision ric, List<HunkEntity> hunkEntities) {
         try {
             String ricName = ric.getLocalCodeDir().getName();
@@ -104,7 +128,7 @@ public class Revert {
             FileUtilx.copyFileToTarget(fileFullOldPath,fileFullNewPath);
         }
         List<String> line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getNewPath());
-        System.out.println("old: " + line.size());
+        //System.out.println("old: " + line.size());
         hunkEntities.sort(new Comparator<HunkEntity>() {
             @Override
             public int compare(HunkEntity p1, HunkEntity p2) {
@@ -131,8 +155,12 @@ public class Revert {
                     break;
             }
         }
-        System.out.println("revert: " + line.size());
-        FileUtilx.writListToFile(tmpPath + File.separator +tmpHunk.getOldPath(),line);
+        //System.out.println("revert: " + line.size());
+
+        //oldPath是一个空文件的情况
+        if(!Objects.equals(tmpHunk.getOldPath(), "/dev/null")){
+            FileUtilx.writeListToFile(tmpPath + File.separator +tmpHunk.getOldPath(),line);
+        }
         return line;
     }
 
@@ -141,5 +169,13 @@ public class Revert {
         List<String> line = FileUtilx.readListFromFile(workPath + File.separator + hunk.getOldPath());
         result = line.subList(hunk.getBeginA(), hunk.getEndA());
         return result;
+    }
+
+    static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
+        migrator.equipRfcWithChangeInfo(rfc);
+        reducer.reduceTestCases(rfc, testCase);
+        needToTestMigrateRevisionList.forEach(revision -> {
+            migrator.migrateTestFromTo_0(rfc, revision);
+        });
     }
 }
