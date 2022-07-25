@@ -114,6 +114,24 @@ public class FileUtilx {
         return ismove;
     }
 
+    public static void copyDirToTarget(String fileFullNameCurrent, String fileFullNameTarget){
+        try {
+            File current = new File(fileFullNameCurrent);
+            if (!current.exists() || !current.isDirectory()) {
+                return;
+            }
+
+            File target = new File(fileFullNameTarget);
+            if (target.exists()) {
+                target.deleteOnExit();
+            }
+            FileUtils.forceMkdirParent(target);
+            FileUtils.copyDirectory(current, target);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
     public static void copyFileToTarget(String fileFullNameCurrent, String fileFullNameTarget){
         try{
             File oldName = new File(fileFullNameCurrent);

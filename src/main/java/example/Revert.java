@@ -71,44 +71,23 @@ public class Revert {
                     regressionTest.getErrorType());
 
             List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
-            //System.out.println(hunks);
 
-            revert(ric, hunks);
+            String path = ric.getLocalCodeDir().toString().replace("_ric","_tmp");
+            FileUtilx.copyDirToTarget(ric.getLocalCodeDir().toString(),path);
+            revert(path,hunks);
             Executor executor = new Executor();
-            String tmpPath = ric.getLocalCodeDir().getParent() + File.separator + ric.getLocalCodeDir().getName() + "_tmp";
-            executor.setDirectory(new File(tmpPath));
+            executor.setDirectory(new File(path));
             String result = executor.exec("./build.sh; ./test.sh");
-            System.out.println(result);
+            System.out.println("Revert result: " + result);
         }
     }
 
 
     public static void revert(String path, List<HunkEntity> hunkEntities){
         try{
-
-        }catch (Exception exception){
-            exception.printStackTrace();
-        }
-    }
-    public static void revert(Revision ric, List<HunkEntity> hunkEntities) {
-        try {
-            String ricName = ric.getLocalCodeDir().getName();
-            String ricPath = ric.getLocalCodeDir().getParent();
-            String tmpName = ricName + "_tmp";
-            String tmpPath = ricPath + File.separator + tmpName;
-
-            File tmpFile = new File(tmpPath);
-            if (tmpFile.exists()) {
-                tmpFile.deleteOnExit();
-            }
-            FileUtils.forceMkdirParent(tmpFile);
-            FileUtils.copyDirectory(ric.getLocalCodeDir(), tmpFile);
-
             Map<String,List<HunkEntity>> stringListMap = hunkEntities.stream().collect(Collectors.groupingBy(HunkEntity::getNewPath));
-
             for (Map.Entry<String,List<HunkEntity>> entry: stringListMap.entrySet()){
-                System.out.println(entry.getKey() + entry.getValue());
-                revertFile(tmpPath,entry.getValue()).size();
+                revertFile(path,entry.getValue());
             }
         }catch (Exception exception){
             exception.printStackTrace();
@@ -117,18 +96,17 @@ public class Revert {
 
     /**
      * 处理一个文件的revert
-     * @param tmpPath 临时项目的全路径，后缀是"_ric_tmp"
+     * @param tmpPath 临时项目的全路径，后缀是"_tmp"
      * @param hunkEntities 需要退回的hunk
      */
     public static List<String> revertFile(String tmpPath, List<HunkEntity> hunkEntities){
         HunkEntity tmpHunk = hunkEntities.get(0);
         if(!Objects.equals(tmpHunk.getNewPath(), tmpHunk.getOldPath())){
-            String fileFullOldPath = tmpPath.replace("_ric_tmp","_work") + File.separator +tmpHunk.getOldPath();
+            String fileFullOldPath = tmpPath.replace("_tmp","_work") + File.separator +tmpHunk.getOldPath();
             String fileFullNewPath = tmpPath + File.separator +tmpHunk.getOldPath();
             FileUtilx.copyFileToTarget(fileFullOldPath,fileFullNewPath);
         }
         List<String> line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getNewPath());
-        //System.out.println("old: " + line.size());
         hunkEntities.sort(new Comparator<HunkEntity>() {
             @Override
             public int compare(HunkEntity p1, HunkEntity p2) {
@@ -140,7 +118,7 @@ public class Revert {
             HunkEntity.HunkType type = hunkEntity.getType();
             switch (type){
                 case DELETE:
-                    List<String> newLine = getLinesFromWorkVersion(tmpPath.replace("_ric_tmp","_work"),hunkEntity);
+                    List<String> newLine = getLinesFromWorkVersion(tmpPath.replace("_tmp","_work"),hunkEntity);
                     line.addAll(hunkEntity.getBeginB(),newLine);
                     break;
                 case INSERT:
@@ -148,14 +126,13 @@ public class Revert {
                     break;
                 case REPLACE:
                     line.subList(hunkEntity.getBeginB(), hunkEntity.getEndB()).clear();
-                    List<String> replaceLine = getLinesFromWorkVersion(tmpPath.replace("_ric_tmp","_work"),hunkEntity);
+                    List<String> replaceLine = getLinesFromWorkVersion(tmpPath.replace("_tmp","_work"),hunkEntity);
                     line.addAll(hunkEntity.getBeginB(),replaceLine);
                     break;
                 case EMPTY:
                     break;
             }
         }
-        //System.out.println("revert: " + line.size());
 
         //oldPath是一个空文件的情况
         if(!Objects.equals(tmpHunk.getOldPath(), "/dev/null")){
