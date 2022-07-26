@@ -11,8 +11,7 @@ import utils.FileUtilx;
 import java.io.File;
 import java.util.*;
 
-import static java.lang.Math.abs;
-import static java.lang.Math.min;
+import static java.lang.Math.*;
 import static utils.FileUtilx.readSetFromFile;
 
 public class ProbDD {
@@ -129,6 +128,56 @@ public class ProbDD {
         }
         System.out.println("循环次数: " + time);
         return retseq;
+    }
+
+
+    public static List<HunkEntity> ddmin(String path, List<HunkEntity> hunkEntities){
+        int time = 0;
+        String tmpPath = path.replace("_ric","_tmp");
+        FileUtilx.copyDirToTarget(path,tmpPath);
+        assert Objects.equals(codeReduceTest(tmpPath, hunkEntities), "PASS");
+        int n = 2;
+        List<HunkEntity> delHunk = new ArrayList<>();
+
+        while(hunkEntities.size() >= 2){
+            int start = 0;
+            int subset_length = hunkEntities.size() / n;
+            boolean some_complement_is_failing = false;
+            while (start < hunkEntities.size()){
+                time = time + 1;
+                List<HunkEntity> complement = new ArrayList<>();
+                for(int i = 0; i < hunkEntities.size();i++ ){
+                    if(i < start || i >= start + subset_length) {
+                        complement.add(hunkEntities.get(i));
+                    }
+                }
+                List<HunkEntity> tmp = new ArrayList<>();
+                for(HunkEntity hunk: hunkEntities){
+                    if(!complement.contains(hunk)){
+                        tmp.add(hunk);
+                    }
+                }
+                delHunk.addAll(tmp);
+                FileUtilx.copyDirToTarget(path,tmpPath);
+                if (Objects.equals(codeReduceTest(tmpPath,delHunk), "FAIL")){
+                    hunkEntities = complement;
+                    n = max(n - 1, 2);
+                    some_complement_is_failing = true;
+                    break;
+                }else {
+                    delHunk.removeAll(tmp);
+                }
+                start += subset_length;
+            }
+            if(!some_complement_is_failing){
+                if (n == hunkEntities.size()){
+                    break;
+                }
+                n = min(n * 2, hunkEntities.size());
+            }
+        }
+        System.out.println("循环次数: " + time);
+        return hunkEntities;
     }
 
     public static String codeReduceTest(String path, List<HunkEntity> hunkEntities){
