@@ -132,6 +132,7 @@ public class FileUtilx {
         }
 
     }
+
     public static void copyFileToTarget(String fileFullNameCurrent, String fileFullNameTarget){
         try{
             File oldName = new File(fileFullNameCurrent);
@@ -139,15 +140,17 @@ public class FileUtilx {
                 return;
             }
             File newName = new File(fileFullNameTarget);
-            if (newName.exists() || newName.isDirectory()) {
+            if(newName.isDirectory()){
                 return;
             }
-
+            if (newName.exists()) {
+                newName.deleteOnExit();
+            }
             File parentDir = new File(newName.getParent());
             if (!parentDir.exists()) {
                 parentDir.mkdirs();
             }
-            FileUtils.copyDirectory(oldName, newName);
+            FileUtils.copyFile(oldName, newName);
 
         }catch (Exception e){
             e.printStackTrace();

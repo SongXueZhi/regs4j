@@ -20,7 +20,6 @@ public class ProbDD {
     static Migrator migrator = new Migrator();
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
     static String projectName = (String) readSetFromFile("projects.txt").toArray()[0];
-    static String projectDirName = Configs.workSpace + File.separator + projectName;
 
     public static void main(String [] args){
 
@@ -66,19 +65,22 @@ public class ProbDD {
                     regressionTest.getErrorType());
 
             List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
-
             long startTime = System.currentTimeMillis();
             List<HunkEntity> failHunk = ProbDD(ric.getLocalCodeDir().toString(),hunks);
             long endTime = System.currentTimeMillis();
             long usedTime = (endTime-startTime)/1000;
             System.out.println("用时: " + usedTime + "s");
-            System.out.println(failHunk.size() + ":" +failHunk);
+            System.out.println("得到hunk数量：" + failHunk.size() + ":" +failHunk);
+            verification(ric.getLocalCodeDir().toString(),failHunk );
 
         }
     }
 
     //传入的path是ric的全路径
     public static List<HunkEntity> ProbDD(String path,List<HunkEntity> hunkEntities){
+        hunkEntities.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
+        List<String> relatedFile =  getRelatedFile(hunkEntities);
+        System.out.println("原hunk的数量是: " + hunkEntities.size());
         int time = 0;
         String tmpPath = path.replace("_ric","_tmp");
         FileUtilx.copyDirToTarget(path,tmpPath);
@@ -92,11 +94,11 @@ public class ProbDD {
         }
         List<HunkEntity> delHunk = new ArrayList<>();//确定不是critical change的hunk，每次都进行revert
         while (!testDone(p)){
-            time = time + 1;
             List<Integer> delIdx = sample(p);
             if(delIdx.size() == 0){
                 break;
             }
+            time = time + 1;
             List<Integer> idx2test = getIdx2test(retIdx,delIdx);
             List<HunkEntity> seq2test = new ArrayList<>();
             List<HunkEntity> del2test = new ArrayList<>();
@@ -107,7 +109,8 @@ public class ProbDD {
                 seq2test.add(hunkEntities.get(idxelm));
             }
             delHunk.addAll(del2test);
-            FileUtilx.copyDirToTarget(path,tmpPath);
+//            FileUtilx.copyDirToTarget(path,tmpPath);
+            copyRelatedFile(path,tmpPath,relatedFile);
             if(Objects.equals(codeReduceTest(tmpPath,delHunk), "FAIL")){
                 for(int set0 = 0; set0 < p.size(); set0++){
                     if(!idx2test.contains(set0)){
@@ -130,8 +133,10 @@ public class ProbDD {
         return retseq;
     }
 
-
     public static List<HunkEntity> ddmin(String path, List<HunkEntity> hunkEntities){
+        hunkEntities.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
+        List<String> relatedFile =  getRelatedFile(hunkEntities);
+        System.out.println("原hunk的数量是: " + hunkEntities.size());
         int time = 0;
         String tmpPath = path.replace("_ric","_tmp");
         FileUtilx.copyDirToTarget(path,tmpPath);
@@ -158,7 +163,8 @@ public class ProbDD {
                     }
                 }
                 delHunk.addAll(tmp);
-                FileUtilx.copyDirToTarget(path,tmpPath);
+                //FileUtilx.copyDirToTarget(path,tmpPath);
+                copyRelatedFile(path,tmpPath,relatedFile);
                 if (Objects.equals(codeReduceTest(tmpPath,delHunk), "FAIL")){
                     hunkEntities = complement;
                     n = max(n - 1, 2);
@@ -180,12 +186,31 @@ public class ProbDD {
         return hunkEntities;
     }
 
+    public static List<HunkEntity> removeTestFile(List<HunkEntity> hunkEntities){
+        hunkEntities.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
+        return hunkEntities;
+    }
+
+    public static List<String> getRelatedFile(List<HunkEntity> hunkEntities){
+        List<String> filePath = new ArrayList<>();
+        for (HunkEntity hunk: hunkEntities) {
+            filePath.add(hunk.getNewPath());
+        }
+        return filePath;
+    }
+
+    public static void copyRelatedFile(String path, String tmpPath, List<String> relatedFile){
+        for (String file: relatedFile) {
+            FileUtilx.copyFileToTarget(path + File.separator + file,tmpPath + File.separator + file);
+        }
+    }
+
     public static String codeReduceTest(String path, List<HunkEntity> hunkEntities){
         Revert.revert(path,hunkEntities);
         Executor executor = new Executor();
         executor.setDirectory(new File(path));
         String result = executor.exec("./build.sh; ./test.sh").replaceAll("\n","");
-        System.out.println(result + ": revert: " + hunkEntities);
+        //System.out.println(result + ": revert: " + hunkEntities);
         return result;
     }
 
@@ -275,10 +300,12 @@ public class ProbDD {
         return true;
     }
 
-    public static List<HunkEntity> ddmin(List<HunkEntity> hunkEntities, String path) {
-
-        return null;
+    public static void verification(String path, List<HunkEntity> failHunk){
+        String tmpPath = path.replace("_ric","_tmp");
+        FileUtilx.copyDirToTarget(path,tmpPath);
+        System.out.println("验证正确性：" + codeReduceTest(tmpPath,failHunk));
     }
+
     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
         migrator.equipRfcWithChangeInfo(rfc);
         reducer.reduceTestCases(rfc, testCase);
@@ -286,6 +313,7 @@ public class ProbDD {
             migrator.migrateTestFromTo_0(rfc, revision);
         });
     }
+
 
 
 }
