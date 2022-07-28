@@ -1,5 +1,6 @@
 package core;
 
+import com.google.protobuf.Value;
 import core.git.GitUtils;
 import example.Revert;
 import model.HunkEntity;
@@ -66,7 +67,7 @@ public class ProbDD {
 
             List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
             long startTime = System.currentTimeMillis();
-            List<HunkEntity> failHunk = ProbDD(ric.getLocalCodeDir().toString(),hunks);
+            List<HunkEntity> failHunk = ddmin(ric.getLocalCodeDir().toString(),hunks);
             long endTime = System.currentTimeMillis();
             long usedTime = (endTime-startTime)/1000;
             System.out.println("用时: " + usedTime + "s");
@@ -109,9 +110,10 @@ public class ProbDD {
                 seq2test.add(hunkEntities.get(idxelm));
             }
             delHunk.addAll(del2test);
-//            FileUtilx.copyDirToTarget(path,tmpPath);
-            copyRelatedFile(path,tmpPath,relatedFile);
-            if(Objects.equals(codeReduceTest(tmpPath,delHunk), "FAIL")){
+            FileUtilx.copyDirToTarget(path,tmpPath + time);
+//            copyRelatedFile(path,tmpPath,relatedFile);
+            System.out.print(time);
+            if(Objects.equals(codeReduceTest(tmpPath + time,delHunk), "FAIL")){
                 for(int set0 = 0; set0 < p.size(); set0++){
                     if(!idx2test.contains(set0)){
                         p.set(set0,0.0);
@@ -163,9 +165,10 @@ public class ProbDD {
                     }
                 }
                 delHunk.addAll(tmp);
-                //FileUtilx.copyDirToTarget(path,tmpPath);
-                copyRelatedFile(path,tmpPath,relatedFile);
-                if (Objects.equals(codeReduceTest(tmpPath,delHunk), "FAIL")){
+                FileUtilx.copyDirToTarget(path,tmpPath + time);
+//                copyRelatedFile(path,tmpPath,relatedFile);
+                System.out.print(time);
+                if (Objects.equals(codeReduceTest(tmpPath + time,delHunk), "FAIL")){
                     hunkEntities = complement;
                     n = max(n - 1, 2);
                     some_complement_is_failing = true;
@@ -210,7 +213,7 @@ public class ProbDD {
         Executor executor = new Executor();
         executor.setDirectory(new File(path));
         String result = executor.exec("./build.sh; ./test.sh").replaceAll("\n","");
-        //System.out.println(result + ": revert: " + hunkEntities);
+        System.out.println(result + ": revert: " + hunkEntities);
         return result;
     }
 

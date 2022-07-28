@@ -100,10 +100,11 @@ public class Revert {
      * @param hunkEntities 需要退回的hunk
      */
     public static List<String> revertFile(String tmpPath, List<HunkEntity> hunkEntities){
+        String workPath = tmpPath.substring(0,tmpPath.lastIndexOf("_")) + "_work";
         HunkEntity tmpHunk = hunkEntities.get(0);
         if(!Objects.equals(tmpHunk.getNewPath(), tmpHunk.getOldPath())){
-            String fileFullOldPath = tmpPath.replace("_tmp","_work") + File.separator +tmpHunk.getOldPath();
-            String fileFullNewPath = tmpPath + File.separator +tmpHunk.getOldPath();
+            String fileFullOldPath = workPath + File.separator + tmpHunk.getOldPath();
+            String fileFullNewPath = tmpPath + File.separator + tmpHunk.getOldPath();
             FileUtilx.copyFileToTarget(fileFullOldPath,fileFullNewPath);
         }
         List<String> line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getNewPath());
@@ -118,7 +119,7 @@ public class Revert {
             HunkEntity.HunkType type = hunkEntity.getType();
             switch (type){
                 case DELETE:
-                    List<String> newLine = getLinesFromWorkVersion(tmpPath.replace("_tmp","_work"),hunkEntity);
+                    List<String> newLine = getLinesFromWorkVersion(workPath,hunkEntity);
                     line.addAll(hunkEntity.getBeginB(),newLine);
                     break;
                 case INSERT:
@@ -126,7 +127,7 @@ public class Revert {
                     break;
                 case REPLACE:
                     line.subList(hunkEntity.getBeginB(), hunkEntity.getEndB()).clear();
-                    List<String> replaceLine = getLinesFromWorkVersion(tmpPath.replace("_tmp","_work"),hunkEntity);
+                    List<String> replaceLine = getLinesFromWorkVersion(workPath,hunkEntity);
                     line.addAll(hunkEntity.getBeginB(),replaceLine);
                     break;
                 case EMPTY:
