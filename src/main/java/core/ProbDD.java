@@ -1,5 +1,6 @@
 package core;
 
+import com.google.protobuf.Value;
 import core.git.GitUtils;
 import example.Revert;
 import model.HunkEntity;
@@ -66,7 +67,7 @@ public class ProbDD {
 
             List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
             long startTime = System.currentTimeMillis();
-            List<HunkEntity> failHunk = ProbDD(ric.getLocalCodeDir().toString(),hunks);
+            List<HunkEntity> failHunk = ddmin(ric.getLocalCodeDir().toString(),hunks);
             long endTime = System.currentTimeMillis();
             long usedTime = (endTime-startTime)/1000;
             System.out.println("用时: " + usedTime + "s");
@@ -92,7 +93,6 @@ public class ProbDD {
             retIdx.add(i);
             p.add(0.1);
         }
-        List<HunkEntity> delHunk = new ArrayList<>();//确定不是critical change的hunk，每次都进行revert
         while (!testDone(p)){
             List<Integer> delIdx = sample(p);
             if(delIdx.size() == 0){
@@ -101,17 +101,13 @@ public class ProbDD {
             time = time + 1;
             List<Integer> idx2test = getIdx2test(retIdx,delIdx);
             List<HunkEntity> seq2test = new ArrayList<>();
-            List<HunkEntity> del2test = new ArrayList<>();
-            for(int del: delIdx){
-                del2test.add(hunkEntities.get(del));
-            }
             for (int idxelm: idx2test){
                 seq2test.add(hunkEntities.get(idxelm));
             }
-            delHunk.addAll(del2test);
-//            FileUtilx.copyDirToTarget(path,tmpPath);
-            copyRelatedFile(path,tmpPath,relatedFile);
-            if(Objects.equals(codeReduceTest(tmpPath,delHunk), "FAIL")){
+            FileUtilx.copyDirToTarget(path,tmpPath + time);
+//            copyRelatedFile(path,tmpPath,relatedFile);
+            System.out.print(time);
+            if(Objects.equals(codeReduceTest(tmpPath + time,seq2test), "PASS")){
                 for(int set0 = 0; set0 < p.size(); set0++){
                     if(!idx2test.contains(set0)){
                         p.set(set0,0.0);
@@ -120,7 +116,6 @@ public class ProbDD {
                 retseq = seq2test;
                 retIdx = idx2test;
             }else {
-                delHunk.removeAll(del2test);
                 for(int setd = 0; setd < p.size(); setd++){
                     if(delIdx.contains(setd) && (p.get(setd) != 0) && (p.get(setd) != 1)){
                         double delta = (computRatio(delIdx,p) - 1) * p.get(setd);
@@ -142,7 +137,6 @@ public class ProbDD {
         FileUtilx.copyDirToTarget(path,tmpPath);
         assert Objects.equals(codeReduceTest(tmpPath, hunkEntities), "PASS");
         int n = 2;
-        List<HunkEntity> delHunk = new ArrayList<>();
 
         while(hunkEntities.size() >= 2){
             int start = 0;
@@ -156,22 +150,13 @@ public class ProbDD {
                         complement.add(hunkEntities.get(i));
                     }
                 }
-                List<HunkEntity> tmp = new ArrayList<>();
-                for(HunkEntity hunk: hunkEntities){
-                    if(!complement.contains(hunk)){
-                        tmp.add(hunk);
-                    }
-                }
-                delHunk.addAll(tmp);
-                //FileUtilx.copyDirToTarget(path,tmpPath);
-                copyRelatedFile(path,tmpPath,relatedFile);
-                if (Objects.equals(codeReduceTest(tmpPath,delHunk), "FAIL")){
+                FileUtilx.copyDirToTarget(path,tmpPath + time);
+                System.out.print(time);
+                if (Objects.equals(codeReduceTest(tmpPath + time,complement), "PASS")){
                     hunkEntities = complement;
                     n = max(n - 1, 2);
                     some_complement_is_failing = true;
                     break;
-                }else {
-                    delHunk.removeAll(tmp);
                 }
                 start += subset_length;
             }
@@ -210,7 +195,7 @@ public class ProbDD {
         Executor executor = new Executor();
         executor.setDirectory(new File(path));
         String result = executor.exec("./build.sh; ./test.sh").replaceAll("\n","");
-        //System.out.println(result + ": revert: " + hunkEntities);
+        System.out.println(result + ": revert: " + hunkEntities);
         return result;
     }
 
