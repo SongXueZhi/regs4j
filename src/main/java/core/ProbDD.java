@@ -9,10 +9,14 @@ import model.Revision;
 import run.Executor;
 import utils.FileUtilx;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 import static java.lang.Math.*;
+import static utils.FileUtilx.readListFromFile;
 import static utils.FileUtilx.readSetFromFile;
 
 public class ProbDD {
@@ -22,7 +26,7 @@ public class ProbDD {
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
     static String projectName = (String) readSetFromFile("projects.txt").toArray()[0];
 
-    public static void main(String [] args){
+    public static void main(String [] args) throws IOException {
 
         File projectDir = sourceCodeManager.getProjectDir(projectName);
         String sql = "select regression_uuid,bfc,buggy,bic,work," +
@@ -34,11 +38,14 @@ public class ProbDD {
                 "'";
         List<Regression> regressionList = MysqlManager.getRegressions(sql);
 
-        Set<String> uuid = readSetFromFile("uuid.txt");
+        List<String> uuid = readListFromFile("uuid.txt");
         regressionList.removeIf(regression -> !uuid.contains(regression.getId()));
         for (int i = 0; i < regressionList.size(); i++) {
             Regression regressionTest = regressionList.get(i);
             String regressionId =  regressionTest.getId();
+            FileWriter fw = new FileWriter(i + "_" + regressionId + "_result", true);
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.append(regressionId);
             System.out.println(regressionId);
 
             Revision rfc = regressionTest.getRfc();
@@ -67,13 +74,15 @@ public class ProbDD {
 
             List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
             long startTime = System.currentTimeMillis();
-            List<HunkEntity> failHunk = ddmin(ric.getLocalCodeDir().toString(),hunks);
+            List<HunkEntity> failHunk = ProbDD(ric.getLocalCodeDir().toString(),hunks);
             long endTime = System.currentTimeMillis();
             long usedTime = (endTime-startTime)/1000;
             System.out.println("用时: " + usedTime + "s");
+            bw.append("\n用时: " + usedTime + "s");
             System.out.println("得到hunk数量：" + failHunk.size() + ":" +failHunk);
-            verification(ric.getLocalCodeDir().toString(),failHunk );
-
+            bw.append("\n得到hunk数量：" + failHunk.size() + ":" +failHunk);
+            bw.close();
+            fw.close();
         }
     }
 
@@ -107,6 +116,7 @@ public class ProbDD {
             FileUtilx.copyDirToTarget(path,tmpPath + time);
 //            copyRelatedFile(path,tmpPath,relatedFile);
             System.out.print(time);
+            //System.out.println(idx2test);
             if(Objects.equals(codeReduceTest(tmpPath + time,seq2test), "PASS")){
                 for(int set0 = 0; set0 < p.size(); set0++){
                     if(!idx2test.contains(set0)){
@@ -116,10 +126,12 @@ public class ProbDD {
                 retseq = seq2test;
                 retIdx = idx2test;
             }else {
+                //todo 这里改了
+                List<Double> pTmp = new ArrayList<>(p);
                 for(int setd = 0; setd < p.size(); setd++){
                     if(delIdx.contains(setd) && (p.get(setd) != 0) && (p.get(setd) != 1)){
-                        double delta = (computRatio(delIdx,p) - 1) * p.get(setd);
-                        p.set(setd,p.get(setd) + delta);
+                        double delta = (computRatio(delIdx,pTmp) - 1) * pTmp.get(setd);
+                        p.set(setd,pTmp.get(setd) + delta);
                     }
                 }
             }
@@ -209,6 +221,7 @@ public class ProbDD {
         return result;
     }
 
+    //todo 按照python实现有问题，在同一次测试中更新了p，使每个元素prob不一样，要把p先记录下来为一个临时list
     public static double computRatio(List<Integer> deleteconfig, List<Double> p){
         double res = 0;
         double tmplog = 1;
