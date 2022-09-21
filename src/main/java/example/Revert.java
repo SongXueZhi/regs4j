@@ -15,6 +15,7 @@ import run.Runner;
 import utils.FileUtilx;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -94,6 +95,17 @@ public class Revert {
         }
     }
 
+    public static void fix(String path, List<HunkEntity> hunkEntities){
+        try{
+            Map<String,List<HunkEntity>> stringListMap = hunkEntities.stream().collect(Collectors.groupingBy(HunkEntity::getNewPath));
+            for (Map.Entry<String,List<HunkEntity>> entry: stringListMap.entrySet()){
+                fixFile(path,entry.getValue());
+            }
+        }catch (Exception exception){
+            exception.printStackTrace();
+        }
+    }
+
     /**
      * 处理一个文件的revert
      * @param tmpPath 临时项目的全路径，后缀是"_tmp"
@@ -142,6 +154,70 @@ public class Revert {
         return line;
     }
 
+    /**
+     * 处理一个文件的fix
+     * @param tmpPath 临时项目的全路径，后缀是"_tmp"
+     * @param hunkEntities 需要退回的hunk
+     */
+    public static List<String> fixFile(String tmpPath, List<HunkEntity> hunkEntities) throws IOException {
+        String rfcPath = tmpPath.substring(0,tmpPath.lastIndexOf("_")) + "_rfc";
+        HunkEntity tmpHunk = hunkEntities.get(0);
+        List<String> line = new ArrayList<>();
+        //todo 文件移动的情况
+        if(!Objects.equals(tmpHunk.getNewPath(), tmpHunk.getOldPath())){
+            // oldPath是一个空文件的情况，这里没处理好，只把newPath的文件复制一个到tmp，最后写入的还是oldPath
+            if(Objects.equals(tmpHunk.getOldPath(), "/dev/null")) {
+                String fileFullRfcPath = rfcPath + File.separator + tmpHunk.getNewPath();
+                String fileFullTmpPath = tmpPath + File.separator + tmpHunk.getNewPath();
+                FileUtilx.copyFileToTarget(fileFullRfcPath,fileFullTmpPath);
+            }
+            // newPath是一个空文件的情况，
+            else if(Objects.equals(tmpHunk.getNewPath(), "/dev/null")){
+                line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getOldPath());
+            }
+            // 这里没处理好，只把newPath的文件复制一个到tmp版本，最后写入的还是oldPath
+            else {
+                String fileFullRfcPath = rfcPath + File.separator + tmpHunk.getNewPath();
+                String fileFullTmpPath = tmpPath + File.separator + tmpHunk.getNewPath();
+                FileUtilx.copyFileToTarget(fileFullRfcPath,fileFullTmpPath);
+                line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getOldPath());
+            }
+
+        }else {
+            line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getOldPath());
+        }
+        hunkEntities.sort(new Comparator<HunkEntity>() {
+            @Override
+            public int compare(HunkEntity p1, HunkEntity p2) {
+                return p2.getBeginA() - p1.getBeginA();
+            }
+        });
+
+        for(HunkEntity hunkEntity: hunkEntities){
+            HunkEntity.HunkType type = hunkEntity.getType();
+            switch (type){
+                case DELETE:
+                    line.subList(hunkEntity.getBeginA(), hunkEntity.getEndA()).clear();
+                    break;
+                case INSERT:
+                    List<String> newLine = getLinesFromRfcVersion(rfcPath,hunkEntity);
+                    line.addAll(hunkEntity.getBeginA(),newLine);
+                    break;
+                case REPLACE:
+                    line.subList(hunkEntity.getBeginA(), hunkEntity.getEndA()).clear();
+                    List<String> replaceLine = getLinesFromRfcVersion(rfcPath,hunkEntity);
+                    line.addAll(hunkEntity.getBeginA(),replaceLine);
+                    break;
+                case EMPTY:
+                    break;
+            }
+        }
+
+        FileUtilx.writeListToFile(tmpPath + File.separator + tmpHunk.getOldPath(),line);
+
+        return line;
+    }
+
     public static List<String> getLinesFromWorkVersion(String workPath, HunkEntity hunk){
         List<String> result = new ArrayList<>();
         List<String> line = FileUtilx.readListFromFile(workPath + File.separator + hunk.getOldPath());
@@ -149,6 +225,12 @@ public class Revert {
         return result;
     }
 
+    public static List<String> getLinesFromRfcVersion(String rfcPath, HunkEntity hunk){
+        List<String> result = new ArrayList<>();
+        List<String> line = FileUtilx.readListFromFile(rfcPath + File.separator + hunk.getNewPath());
+        result = line.subList(hunk.getBeginA(), hunk.getEndA());
+        return result;
+    }
     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
         migrator.equipRfcWithChangeInfo(rfc);
         reducer.reduceTestCases(rfc, testCase);

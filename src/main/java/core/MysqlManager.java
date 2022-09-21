@@ -18,6 +18,7 @@
 
 package core;
 
+import model.HunkEntity;
 import model.Regression;
 import model.Revision;
 
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static core.Configs.*;
+import static utils.FileUtilx.readListFromFile;
 
 public class MysqlManager {
 
@@ -33,6 +35,15 @@ public class MysqlManager {
 
     private static Connection conn = null;
     private static Statement statement = null;
+
+    public static void main(String[] args) throws Exception {
+        List<String> uuid = readListFromFile("uuid.txt");
+        for (String id: uuid) {
+            System.out.println(id);
+            countCC("bic",id,"ProbDD");
+            countCC("bic",id,"ddmin");
+        }
+    }
 
     private static void getConn() throws Exception {
         if (conn != null) {
@@ -135,6 +146,90 @@ public class MysqlManager {
         }
         return regressionList;
     }
+
+    public static void insertCC(String revision_name, String regression_uuid, String tool, List<HunkEntity> hunks) throws Exception {
+        if (conn == null) {
+            getConn();
+        }
+        PreparedStatement pstmt = null;
+        try {
+            for(HunkEntity hunk: hunks) {
+                pstmt = conn.prepareStatement("insert into critical_change_dd(revision_name, regression_uuid, new_path, old_path, " +
+                        "beginA, beginB, endA, endB, type, tool) values(?,?,?,?,?,?,?,?,?,?)");
+                pstmt.setString(1, revision_name);
+                pstmt.setString(2, regression_uuid);
+                pstmt.setString(3, hunk.getNewPath());
+                pstmt.setString(4, hunk.getOldPath());
+                pstmt.setInt(5, hunk.getBeginA());
+                pstmt.setInt(6, hunk.getBeginB());
+                pstmt.setInt(7, hunk.getEndA());
+                pstmt.setInt(8, hunk.getEndB());
+                pstmt.setString(9, hunk.getType().toString());
+                pstmt.setString(10, tool);
+                pstmt.executeUpdate();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (pstmt!=null){
+                pstmt.close();
+            }
+        }
+    }
+
+    public static List<HunkEntity> selectCC(String revision_name, String regression_uuid, String tool) throws Exception{
+        List<HunkEntity> hunkList = new ArrayList<>();
+        if (conn == null) {
+            getConn();
+        }
+        PreparedStatement pstmt = null;
+        try {
+            getStatement();
+            ResultSet rs = statement.executeQuery("select count(*) from critical_change_dd where revision_name='" + revision_name +
+                    "'and regression_uuid='" + regression_uuid +"'" + "and tool='" + tool +"'");
+            while (rs.next()){
+                HunkEntity hunkEntity = new HunkEntity();
+                hunkEntity.setType(rs.getString("type"));
+                hunkEntity.setOldPath(rs.getString("old_path"));
+                hunkEntity.setNewPath(rs.getString("new_path"));
+                hunkEntity.setBeginA(rs.getInt("beginA"));
+                hunkEntity.setBeginB(rs.getInt("beginB"));
+                hunkEntity.setEndA(rs.getInt("endA"));
+                hunkEntity.setEndB(rs.getInt("endB"));
+                hunkList.add(hunkEntity);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (pstmt!=null){
+                pstmt.close();
+            }
+        }
+        return hunkList;
+    }
+
+    public static void countCC(String revision_name, String regression_uuid, String tool) throws Exception{
+        if (conn == null) {
+            getConn();
+        }
+        PreparedStatement pstmt = null;
+        try {
+            getStatement();
+            ResultSet rs = statement.executeQuery("select count(*) from critical_change_dd where revision_name='" + revision_name +
+                    "'and regression_uuid='" + regression_uuid +"'" + "and tool='" + tool +"'");
+            while (rs.next()) {
+                System.out.println(rs.getInt(1));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (pstmt!=null){
+                pstmt.close();
+            }
+        }
+    }
+
     public static void  insertDD(String uuid,String revision,String cc_ddmin,String cc_ddj) throws Exception {
         if (conn == null) {
             getConn();

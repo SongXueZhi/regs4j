@@ -1,6 +1,5 @@
 package core;
 
-import com.google.protobuf.Value;
 import core.git.GitUtils;
 import example.Revert;
 import model.HunkEntity;
@@ -26,7 +25,17 @@ public class ProbDD {
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
     static String projectName = (String) readSetFromFile("projects.txt").toArray()[0];
 
-    public static void main(String [] args) throws IOException {
+    static BufferedWriter bw;
+    static {
+        try {
+            bw = new BufferedWriter(new FileWriter("detail", true));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void main(String [] args) throws Exception {
 
         File projectDir = sourceCodeManager.getProjectDir(projectName);
         String sql = "select regression_uuid,bfc,buggy,bic,work," +
@@ -43,8 +52,6 @@ public class ProbDD {
         for (int i = 0; i < regressionList.size(); i++) {
             Regression regressionTest = regressionList.get(i);
             String regressionId =  regressionTest.getId();
-            FileWriter fw = new FileWriter(i + "_" + regressionId + "_result", true);
-            BufferedWriter bw = new BufferedWriter(fw);
             bw.append(regressionId);
             System.out.println(regressionId);
 
@@ -60,7 +67,11 @@ public class ProbDD {
             File workDir = sourceCodeManager.checkout(regressionId, work, projectDir, projectName);
             work.setLocalCodeDir(workDir);
 
-            List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, work);
+            Revision buggy = regressionTest.getBuggy();
+            File buggyDir = sourceCodeManager.checkout(regressionId, buggy, projectDir, projectName);
+            buggy.setLocalCodeDir(buggyDir);
+
+            List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, work, buggy);
             migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regressionTest.getTestCase());
 
 //            //2.create symbolicLink for good and bad
@@ -71,26 +82,40 @@ public class ProbDD {
                     regressionTest.getErrorType());
             sourceCodeManager.createShell(regressionTest.getId(), projectName, work, regressionTest.getTestCase(),
                     regressionTest.getErrorType());
+            sourceCodeManager.createShell(regressionTest.getId(), projectName, rfc, regressionTest.getTestCase(),
+                    regressionTest.getErrorType());
+            sourceCodeManager.createShell(regressionTest.getId(), projectName, buggy, regressionTest.getTestCase(),
+                    regressionTest.getErrorType());
 
             List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
             long startTime = System.currentTimeMillis();
-            List<HunkEntity> failHunk = ProbDD(ric.getLocalCodeDir().toString(),hunks);
-            long endTime = System.currentTimeMillis();
-            long usedTime = (endTime-startTime)/1000;
-            System.out.println("用时: " + usedTime + "s");
-            bw.append("\n用时: " + usedTime + "s");
-            System.out.println("得到hunk数量：" + failHunk.size() + ":" +failHunk);
-            bw.append("\n得到hunk数量：" + failHunk.size() + ":" +failHunk);
-            bw.close();
-            fw.close();
+            List<HunkEntity> ccHunks = ProbDD(ric.getLocalCodeDir().toString(),hunks);
+            MysqlManager.insertCC("bic", regressionId, "ProbDD", ccHunks);
+
+            List<HunkEntity> ccHunks2 = ddmin(ric.getLocalCodeDir().toString(),hunks);
+            MysqlManager.insertCC("bic", regressionId, "ddmin", ccHunks2);
+
+//            long endTime = System.currentTimeMillis();
+//            long usedTime = (endTime-startTime)/1000;
+//            System.out.println("用时: " + usedTime + "s");
+//            bw.append("\n用时: " + usedTime + "s");
+            //System.out.println("得到hunk数量：" + ccHunks.size() + ":" +ccHunks);
+            //bw.append("\n得到hunk数量：" + ccHunks.size() + ":" +ccHunks + "\n");
         }
+        bw.close();
+
     }
 
     //传入的path是ric的全路径
-    public static List<HunkEntity> ProbDD(String path,List<HunkEntity> hunkEntities){
+    public static List<HunkEntity> ProbDD(String path,List<HunkEntity> hunkEntities) throws IOException {
         hunkEntities.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
+        hunkEntities.removeIf(hunkEntity -> hunkEntity.getOldPath().contains("test"));
+
         List<String> relatedFile =  getRelatedFile(hunkEntities);
         System.out.println("原hunk的数量是: " + hunkEntities.size());
+        bw.append("\n原hunk的数量是: " + hunkEntities.size());
+        bw.append("\n" + hunkEntities);
+        bw.append("\n -------开始ProbDD---------");
         int time = 0;
         String tmpPath = path.replace("_ric","_tmp");
         FileUtilx.copyDirToTarget(path,tmpPath);
@@ -116,7 +141,9 @@ public class ProbDD {
             FileUtilx.copyDirToTarget(path,tmpPath + time);
 //            copyRelatedFile(path,tmpPath,relatedFile);
             System.out.print(time);
+            bw.append( "\n" + time);
             //System.out.println(idx2test);
+            bw.append( " revert: " + idx2test);
             if(Objects.equals(codeReduceTest(tmpPath + time,seq2test), "PASS")){
                 for(int set0 = 0; set0 < p.size(); set0++){
                     if(!idx2test.contains(set0)){
@@ -126,7 +153,6 @@ public class ProbDD {
                 retseq = seq2test;
                 retIdx = idx2test;
             }else {
-                //todo 这里改了
                 List<Double> pTmp = new ArrayList<>(p);
                 for(int setd = 0; setd < p.size(); setd++){
                     if(delIdx.contains(setd) && (p.get(setd) != 0) && (p.get(setd) != 1)){
@@ -135,15 +161,26 @@ public class ProbDD {
                     }
                 }
             }
+            bw.append("\np: " + p);
         }
         System.out.println("循环次数: " + time);
+        bw.append("\n循环次数: " + time);
         return retseq;
     }
 
-    public static List<HunkEntity> ddmin(String path, List<HunkEntity> hunkEntities){
+    public static List<HunkEntity> ddmin(String path, List<HunkEntity> hunkEntities) throws IOException {
+        HashMap<HunkEntity, Integer> hunkMap = new HashMap<>();
+        for (HunkEntity hunk: hunkEntities) {
+            hunkMap.put(hunk, hunkEntities.indexOf(hunk));
+        }
         hunkEntities.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
+        hunkEntities.removeIf(hunkEntity -> hunkEntity.getOldPath().contains("test"));
         List<String> relatedFile =  getRelatedFile(hunkEntities);
         System.out.println("原hunk的数量是: " + hunkEntities.size());
+        bw.append("\n原hunk的数量是: " + hunkEntities.size());
+        bw.append("\n" + hunkEntities);
+        bw.append("\n -------开始ddmin---------");
+
         int time = 0;
         String tmpPath = path.replace("_ric","_tmp");
         FileUtilx.copyDirToTarget(path,tmpPath);
@@ -164,6 +201,12 @@ public class ProbDD {
                 }
                 FileUtilx.copyDirToTarget(path,tmpPath + time);
                 System.out.print(time);
+                bw.append("\n" + time);
+                List<Integer> index = new ArrayList<>();
+                for (HunkEntity com: complement) {
+                    index.add(hunkMap.get(com));
+                }
+                bw.append(" revert: " + index);
                 if (Objects.equals(codeReduceTest(tmpPath + time,complement), "PASS")){
                     hunkEntities = complement;
                     n = max(n - 1, 2);
@@ -180,6 +223,7 @@ public class ProbDD {
             }
         }
         System.out.println("循环次数: " + time);
+        bw.append("\n循环次数: " + time);
         return hunkEntities;
     }
 
@@ -202,12 +246,13 @@ public class ProbDD {
         }
     }
 
-    public static String codeReduceTest(String path, List<HunkEntity> hunkEntities){
+    public static String codeReduceTest(String path, List<HunkEntity> hunkEntities) throws IOException {
         Revert.revert(path,hunkEntities);
         Executor executor = new Executor();
         executor.setDirectory(new File(path));
         String result = executor.exec("./build.sh; ./test.sh").replaceAll("\n","");
         System.out.println(result + ": revert: " + hunkEntities);
+        bw.append("  " + result );
         return result;
     }
 
@@ -221,7 +266,7 @@ public class ProbDD {
         return result;
     }
 
-    //todo 按照python实现有问题，在同一次测试中更新了p，使每个元素prob不一样，要把p先记录下来为一个临时list
+    //按照python实现有问题，在同一次测试中更新了p，使每个元素prob不一样，要把p先记录下来为一个临时list
     public static double computRatio(List<Integer> deleteconfig, List<Double> p){
         double res = 0;
         double tmplog = 1;
@@ -298,7 +343,7 @@ public class ProbDD {
         return true;
     }
 
-    public static void verification(String path, List<HunkEntity> failHunk){
+    public static void verification(String path, List<HunkEntity> failHunk) throws IOException {
         String tmpPath = path.replace("_ric","_tmp");
         FileUtilx.copyDirToTarget(path,tmpPath);
         System.out.println("验证正确性：" + codeReduceTest(tmpPath,failHunk));
