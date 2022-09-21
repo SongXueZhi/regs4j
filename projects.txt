@@ -1,1 +1,2 @@
 uniVocity/univocity-parsers
+jhy/jsoup

@@ -10,6 +10,9 @@ import model.Revision;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+
+import static utils.FileUtilx.readSetFromFile;
 
 public class TransferBugsToDD {
     // prepare ddj input dir and build.sh test.sh
@@ -29,6 +32,8 @@ public class TransferBugsToDD {
                 "where results.error_type is not null and regression.project_full_name ='" + projectName +
                 "'";
         List<Regression> regressionList = MysqlManager.getRegressions(sql);
+        Set<String> uuid = readSetFromFile("uuid.txt");
+        regressionList.removeIf(regression -> !uuid.contains(regression.getId()));
         try {
             for (int i = 0; i < regressionList.size(); i++) {
                 Regression regression = regressionList.get(i);
