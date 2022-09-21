@@ -3,7 +3,10 @@ package utils;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import org.apache.commons.io.FileUtils;
 
 public class FileUtilx {
 
@@ -49,6 +52,89 @@ public class FileUtilx {
 
         }
         return result;
+    }
+
+    public static void writeListToFile(String path, List<String> line) {
+        File file = new File(path);
+        try {
+            FileOutputStream fos = new FileOutputStream(path,false);
+            if (file.exists() && file.isFile()) {
+                BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos, StandardCharsets.UTF_8));
+                for(String s:line) {
+                    bw.write(s);
+                    bw.newLine();
+                    bw.flush();
+                }
+                bw.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Boolean moveFileToTarget(String fileFullNameCurrent, String fileFullNameTarget) {
+        boolean ismove = false;
+        File oldName = new File(fileFullNameCurrent);
+        if (!oldName.exists() || oldName.isDirectory()) {
+            return false;
+        }
+
+        File newName = new File(fileFullNameTarget);
+        if (newName.exists() || newName.isDirectory()) {
+            return false;
+        }
+
+        String parentFile = newName.getParent();
+        File parentDir = new File(parentFile);
+        if (!parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+        ismove = oldName.renameTo(newName);
+        return ismove;
+    }
+
+    public static void copyDirToTarget(String fileFullNameCurrent, String fileFullNameTarget){
+        try {
+            File current = new File(fileFullNameCurrent);
+            if (!current.exists() || !current.isDirectory()) {
+                return;
+            }
+
+            File target = new File(fileFullNameTarget);
+            if (target.exists()) {
+                FileUtils.forceDelete(target);
+            }
+            FileUtils.forceMkdirParent(target);
+            FileUtils.copyDirectory(current, target);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void copyFileToTarget(String fileFullNameCurrent, String fileFullNameTarget){
+        try{
+            File oldName = new File(fileFullNameCurrent);
+            if (!oldName.exists() || oldName.isDirectory()) {
+                return;
+            }
+            File newName = new File(fileFullNameTarget);
+            if(newName.isDirectory()){
+                return;
+            }
+            if (newName.exists()) {
+                newName.delete();
+            }
+            File parentDir = new File(newName.getParent());
+            if (!parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+            FileUtils.copyFile(oldName, newName);
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
 }

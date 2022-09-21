@@ -28,10 +28,10 @@ public class Migrator {
             }
             File bfcFile = new File(bfcDir, newPath);
             File tFile = new File(tDir, newPath);
-//            Modify: We do not want to delete migrated files on exit
-//            if (tFile.exists()) {
-//                tFile.deleteOnExit();
-//            }
+
+            if (tFile.exists()) {
+                tFile.delete();
+            }
             // 直接copy过去
             try {
                 FileUtils.forceMkdirParent(tFile);

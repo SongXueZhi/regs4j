@@ -78,7 +78,7 @@ public class Reducer {
                     importDeclaration.delete();
                 }
             }
-            FileUtils.forceDeleteOnExit(file);
+            file.delete();
             FileUtils.writeStringToFile(file, unit.toString());
         } catch (IOException e) {
             e.printStackTrace();
