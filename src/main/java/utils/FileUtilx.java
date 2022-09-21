@@ -123,7 +123,7 @@ public class FileUtilx {
 
             File target = new File(fileFullNameTarget);
             if (target.exists()) {
-                target.deleteOnExit();
+                FileUtils.forceDelete(target);
             }
             FileUtils.forceMkdirParent(target);
             FileUtils.copyDirectory(current, target);
@@ -144,7 +144,7 @@ public class FileUtilx {
                 return;
             }
             if (newName.exists()) {
-                newName.deleteOnExit();
+                newName.delete();
             }
             File parentDir = new File(newName.getParent());
             if (!parentDir.exists()) {

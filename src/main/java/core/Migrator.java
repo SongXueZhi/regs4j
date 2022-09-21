@@ -29,7 +29,7 @@ public class Migrator {
             File bfcFile = new File(bfcDir, newPath);
             File tFile = new File(tDir, newPath);
             if (tFile.exists()) {
-                tFile.deleteOnExit();
+                tFile.delete();
             }
             // 直接copy过去
             try {
