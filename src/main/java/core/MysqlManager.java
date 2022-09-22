@@ -154,7 +154,8 @@ public class MysqlManager {
         PreparedStatement pstmt = null;
         try {
             for(HunkEntity hunk: hunks) {
-                pstmt = conn.prepareStatement("insert into critical_change_dd(revision_name, regression_uuid, new_path, old_path, " +
+                pstmt = conn.prepareStatement("insert IGNORE into critical_change_dd(revision_name, regression_uuid, " +
+                        "new_path, old_path, " +
                         "beginA, beginB, endA, endB, type, tool) values(?,?,?,?,?,?,?,?,?,?)");
                 pstmt.setString(1, revision_name);
                 pstmt.setString(2, regression_uuid);
