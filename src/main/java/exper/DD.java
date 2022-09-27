@@ -23,8 +23,8 @@ public class DD {
     static FuzzInput fuzzInput;
 
     public static void main(String[] args) {
-        fuzzInput = fuzz();
-        // or fuzzInput = fuzz(5,1);
+        //fuzzInput = fuzz();
+        fuzzInput = fuzz(5,1);
         //dd
     }
 
@@ -54,7 +54,7 @@ public class DD {
 
         FuzzInput fuzzInput = new FuzzInput();
         fuzzInput.set = new HashSet<>(setSize);
-        initializeSet(fuzzInput.set);
+        initializeSet(fuzzInput.set,setSize);
         fuzzInput.relatedMap = createRelatedMap(fuzzInput.set, relatedNum);
         fuzzInput.criticalChanges = createCriticalChanges(fuzzInput.set);
         return fuzzInput;
@@ -70,6 +70,7 @@ public class DD {
         return fuzz(setSize, relatedNum);
     }
 
+    //revert（1-subset）
     static int test(Set<Integer> subset) {
         //Return result according to different priorities
         //1) unresolved, if a->b, a in the subset , b is not .
@@ -88,8 +89,8 @@ public class DD {
         }
     }
 
-    static void initializeSet(Set<Integer> set) {
-        for (int i = 0; i < set.size(); i++) {
+    static void initializeSet(Set<Integer> set, int setSize) {
+        for (int i = 0; i < setSize; i++) {
             set.add(i);
         }
     }
