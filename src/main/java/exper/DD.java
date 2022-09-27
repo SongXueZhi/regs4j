@@ -24,7 +24,12 @@ public class DD {
 
     public static void main(String[] args) {
         //fuzzInput = fuzz();
-        fuzzInput = fuzz(5,1);
+        fuzzInput = fuzz(6,2);
+        System.out.println("dd input:");
+        System.out.println(fuzzInput.set);
+        System.out.println(fuzzInput.relatedMap);
+        System.out.println(fuzzInput.criticalChanges);
+
         //dd
     }
 
