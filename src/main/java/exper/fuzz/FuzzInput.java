@@ -12,7 +12,7 @@ import java.util.Set;
  */
 public class FuzzInput {
 
-    public Set<Integer> set;
+    public List<Integer> set;
     public MultiValuedMap<Integer,Integer> relatedMap;
     public Set<Integer> criticalChanges; //note set not have order ,but List have.
 }
