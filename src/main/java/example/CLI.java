@@ -167,11 +167,17 @@ public class CLI {
         ric.setLocalCodeDir(ricDir);
         target.setRic(ric);
         
-        List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[] {ric});
+//        Modify: Clone working commit and migrate test case to it as well.
+        Revision working = target.getWork();
+        File workDir = sourceCodeManager.checkout(working, projectDir, projectFullName);
+        working.setLocalCodeDir(workDir);
+        target.setWork(working);
+        
+        List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[] {ric, working});
         migrateTestAndDependency(rfc, needToTestMigrateRevisionList, target.getTestCase());
         
-        System.out.println("rfc directory: " + rfcDir.toString());
         System.out.println("ric directory: " + ricDir.toString());
+        System.out.println("work directory: " + workDir.toString());
 	}
 	
 	private static void similarity() {
