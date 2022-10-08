@@ -117,8 +117,11 @@ public class DD {
 
                     }
                 }
-                int selectNum = (int) (log(retSet.size()) / log(2));
-                delSet = getTestSet(retSet,select(dPro,selectNum));
+                //int selectSetSize = (int) (log(retSet.size()) / log(2));
+                int selectSetSize = retSet.size() - sample(cPro).size();
+                //delSet = getTestSet(retSet,select(dPro,selectSetSize));
+                List<Double> avgPro = getAvgPro(cPro,dPro);
+                delSet = getTestSet(retSet,select(avgPro,selectSetSize));
 
             }
             System.out.println("cPro: " + cPro);
