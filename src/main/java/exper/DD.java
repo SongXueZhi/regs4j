@@ -31,7 +31,7 @@ public class DD {
     final static double dRate = 0.1;
     final static int setSize = 6;
     final static int relatedNum = 2;
-
+    final static int criticalNum = 2;
 
     static BufferedWriter bw;
     static {
@@ -44,7 +44,7 @@ public class DD {
 
     public static void main(String[] args) {
         //fuzzInput = fuzz();
-        fuzzInput = fuzz(setSize,relatedNum);
+        fuzzInput = fuzz(setSize,relatedNum, criticalNum);
         System.out.println("dd input:");
         System.out.println(fuzzInput.set);
         System.out.println(fuzzInput.relatedMap);
@@ -95,7 +95,7 @@ public class DD {
                 for(int setd = 0; setd < cPro.size(); setd++){
                     if(delSet.contains(setd) && (cPro.get(setd) != 0) && (cPro.get(setd) != 1)){
                         double delta = cRadio * cProTmp.get(setd);
-                        cPro.set(setd,cProTmp.get(setd) + delta);
+                        cPro.set(setd,min(cProTmp.get(setd) + delta, 1.0));
                     }
                 }
                 for(int setd = 0; setd < dPro.size(); setd++){
@@ -185,7 +185,7 @@ public class DD {
      * @param relatedNum
      * @return
      */
-    static FuzzInput fuzz(int setSize, int relatedNum) {
+    static FuzzInput fuzz(int setSize, int relatedNum, int criticalNum) {
         if (setSize < MIN_SET_SIZE) {
             setSize = MIN_SET_SIZE;
         }
@@ -197,18 +197,19 @@ public class DD {
         fuzzInput.set = new ArrayList<>(setSize);
         initializeSet(fuzzInput.set,setSize);
         fuzzInput.relatedMap = createRelatedMap(fuzzInput.set, relatedNum);
-        fuzzInput.criticalChanges = createCriticalChanges(fuzzInput.set);
+        fuzzInput.criticalChanges = createCriticalChanges(fuzzInput.set, criticalNum);
         return fuzzInput;
     }
 
     static FuzzInput fuzz() {
         FuzzInput fuzzInput = new FuzzInput();
         int setSize = RandomUtils.nextInt(MIN_SET_SIZE, MAX_SET_SIZE);
-        int maxRelatedNum = (setSize / 2) - 1;
-        maxRelatedNum = 0 > maxRelatedNum ? 0 : maxRelatedNum;
-        Validate.isTrue(maxRelatedNum >= 0);
+        int maxRelatedNum = max((setSize / 2) - 1,0);
+        int maxCriticalNum = max((setSize / 2) - 1,0);
         int relatedNum = RandomUtils.nextInt(0, maxRelatedNum);
-        return fuzz(setSize, relatedNum);
+        int criticalNum = RandomUtils.nextInt(0, maxCriticalNum);
+
+        return fuzz(setSize, relatedNum, criticalNum);
     }
 
     static int test(List<Integer> subset) {
@@ -235,13 +236,13 @@ public class DD {
         }
     }
 
-    static Set<Integer> createCriticalChanges(List<Integer> set) {
-        Set<Integer> criticalChanges = new HashSet<>(2);
-        int c1 = RandomUtils.nextInt(0, set.size());
-        int c2 = RandomUtils.nextInt(0, set.size());
+    static Set<Integer> createCriticalChanges(List<Integer> set, int criticalNum) {
+        Set<Integer> criticalChanges = new HashSet<>(criticalNum);
         //Note that! there may be 1 cc(when c1 equals c2) or 2 cc.
-        criticalChanges.add(c1);
-        criticalChanges.add(c2);
+        for(int i = 0; i < criticalNum; i++){
+            int c = RandomUtils.nextInt(0, set.size());
+            criticalChanges.add(c);
+        }
         return  criticalChanges;
     }
 
@@ -265,6 +266,7 @@ public class DD {
             while (relatedMap.containsMapping(parentIndex, childIndex) || relatedMap.containsMapping(childIndex,
                     parentIndex)) {
                 parentIndex = RandomUtils.nextInt(0, set.size());
+                childIndex = RandomUtils.nextInt(0, set.size());
                 while (parentIndex == childIndex) {
                     childIndex = RandomUtils.nextInt(0, set.size());
                 }
@@ -419,7 +421,6 @@ public class DD {
     }
 
     public static List<Integer> select(List<Double> prob, int selectNum){
-            //List<Integer> retSet){
         List<Integer> selectSet = new ArrayList<>(selectNum);
         double total = listToSum(prob);
 
