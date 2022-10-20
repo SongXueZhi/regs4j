@@ -44,16 +44,48 @@ public class DD {
 
     public static void main(String[] args) {
         //fuzzInput = fuzz();
-        fuzzInput = fuzz(setSize,relatedNum, criticalNum);
-        System.out.println("dd input:");
-        System.out.println(fuzzInput.set);
-        System.out.println(fuzzInput.relatedMap);
-        System.out.println(fuzzInput.criticalChanges);
+//        fuzzInput = fuzz(setSize,relatedNum, criticalNum);
+//        System.out.println("dd input:");
+//        System.out.println(fuzzInput.set);
+//        System.out.println(fuzzInput.relatedMap);
+//        System.out.println(fuzzInput.criticalChanges);
+//
+//        System.out.println("dd output:\n" + proddPlus(fuzzInput.set));
 
-        System.out.println("dd output:\n" + proddPlus(fuzzInput.set));
+        //System.out.println("prodd output:\n" + prodd(fuzzInput.set));
+        batchTest();
+    }
 
-        System.out.println("prodd output:\n" + prodd(fuzzInput.set));
+    public static void batchTest(){
+        int num1 = 0;
+        int num2 = 0;
+        int num3 = 0;
+        int equal = 0;
 
+        for(int i = 0; i < 100; i++) {
+            fuzzInput = fuzz(setSize, relatedNum, criticalNum);
+            int size1 = proddPlusD(fuzzInput.set).size();
+            int size2 = proddPlus(fuzzInput.set).size();
+            int size3 = prodd(fuzzInput.set).size();
+
+            if((size1 == size2) && (size1 == size3)){
+                equal++;
+            }
+            if((size1 <= size2) && (size1 <= size3)){
+                num1++;
+            }
+            if((size2 <= size1) && (size2 <= size3)){
+                num2++;
+            }
+            if((size3 <= size2) && (size3 <= size1)){
+                num3++;
+            }
+
+            System.out.println("equal: " + equal);
+            System.out.println("dd+D: " + num1);
+            System.out.println("dd+: " + num2);
+            System.out.println("dd: " + num3);
+        }
     }
 
     static List<Integer> proddPlus(List<Integer> set) {
@@ -84,7 +116,10 @@ public class DD {
                     }
                 }
                 retSet = testSet;
-                delSet = sample(cPro);
+                //delSet = sample(cPro);
+                int selectSetSize = retSet.size() - sample(cPro).size();
+                List<Double> avgPro = getAvgPro(cPro,dPro);
+                delSet = getTestSet(retSet,select(avgPro,selectSetSize));
             }else if(result == FAL){
                 //FAIL: d_pro-- c_pro++
                 List<Double> cProTmp = new ArrayList<>(cPro);
@@ -117,9 +152,94 @@ public class DD {
 
                     }
                 }
-                //int selectSetSize = (int) (log(retSet.size()) / log(2));
                 int selectSetSize = retSet.size() - sample(cPro).size();
-                //delSet = getTestSet(retSet,select(dPro,selectSetSize));
+                List<Double> avgPro = getAvgPro(cPro,dPro);
+                delSet = getTestSet(retSet,select(avgPro,selectSetSize));
+
+            }
+            System.out.println("cPro: " + cPro);
+            System.out.println("dPro: " + dPro);
+
+            if(delSet.size() == 0){
+                break;
+            }
+        }
+        return retSet;
+    }
+
+    static List<Integer> proddPlusD(List<Integer> set) {
+        List<Integer> retSet = set;
+        List<Double> cPro = new ArrayList<>();
+        List<Double> dPro = new ArrayList<>();
+
+        for(int i = 0; i < set.size(); i++){
+            cPro.add(cSigma);
+            dPro.add(dSigma);
+        }
+
+        List<Integer> delSet = sample(cPro);
+
+        int loop = 0;
+        while (!testDone(cPro) && loop < 40){
+            loop++;
+
+            List<Integer> testSet = getTestSet(retSet,delSet);
+            List<Integer> tmpSet = new ArrayList<>(testSet);
+            for (int test: tmpSet) {
+                if(fuzzInput.relatedMap.containsKey(test)){
+                    getDependency(testSet, test);
+                }
+            }
+            delSet =  getTestSet(retSet,testSet);
+
+            int result = test(testSet);
+            System.out.println(loop + ": " + result + ": test: " + testSet);
+            if(result == PASS){
+                //PASS: cPro=0 dPro=0
+                for(int set0 = 0; set0 < cPro.size() && set0 < dPro.size(); set0++){
+                    if(!testSet.contains(set0)){
+                        cPro.set(set0,0.0);
+                        dPro.set(set0,0.0);
+                    }
+                }
+                retSet = testSet;
+                //delSet = sample(cPro);
+                int selectSetSize = retSet.size() - sample(cPro).size();
+                List<Double> avgPro = getAvgPro(cPro,dPro);
+                delSet = getTestSet(retSet,select(avgPro,selectSetSize));
+            }else if(result == FAL){
+                //FAIL: d_pro-- c_pro++
+                List<Double> cProTmp = new ArrayList<>(cPro);
+                List<Double> dProTmp = new ArrayList<>(dPro);
+                double cRadio = computRatio(delSet,cProTmp) - 1;
+                double dDelta = dRate * testSet.size() / delSet.size();
+
+                for(int setd = 0; setd < cPro.size(); setd++){
+                    if(delSet.contains(setd) && (cPro.get(setd) != 0) && (cPro.get(setd) != 1)){
+                        double delta = cRadio * cProTmp.get(setd);
+                        cPro.set(setd,min(cProTmp.get(setd) + delta, 1.0));
+                    }
+                }
+                for(int setd = 0; setd < dPro.size(); setd++){
+                    if(delSet.contains(setd)){
+                        dPro.set(setd,max(dProTmp.get(setd) - dDelta, dSigma));
+                    }
+                }
+                int selectSetSize = retSet.size() - sample(cPro).size();
+                List<Double> avgPro = getAvgPro(cPro,dPro);
+                delSet = getTestSet(retSet,select(avgPro,selectSetSize));
+
+            }else {
+                //CE: d_pro++
+                List<Double> dProTmp = new ArrayList<>(dPro);
+                double dDelta = dRate * testSet.size() / delSet.size();
+                for(int setd = 0; setd < dPro.size(); setd++){
+                    if(delSet.contains(setd)){
+                        dPro.set(setd,min(dProTmp.get(setd) + dDelta, 1.0));
+
+                    }
+                }
+                int selectSetSize = retSet.size() - sample(cPro).size();
                 List<Double> avgPro = getAvgPro(cPro,dPro);
                 delSet = getTestSet(retSet,select(avgPro,selectSetSize));
 
@@ -463,5 +583,15 @@ public class DD {
             total += p;
         }
         return total;
+    }
+
+    public static List<Integer> getDependency(List<Integer> testSet, int test){
+        for (int dSet: fuzzInput.relatedMap.get(test)) {
+            if(!testSet.contains(dSet)) {
+                testSet.add(dSet);
+                getDependency(testSet, dSet);
+            }
+        }
+        return testSet;
     }
 }
