@@ -63,31 +63,48 @@ public class DD {
         int num1 = 0;
         int num2 = 0;
         int num3 = 0;
+        int num4 = 0;
         int equal = 0;
 
         for (int i = 0; i < 100; i++) {
             fuzzInput = fuzz(setSize, relatedNum, criticalNum);
-            int size1 = proddPlusD(fuzzInput.set).size();
-            int size2 = proddPlus(fuzzInput.set).size();
-            int size3 = prodd(fuzzInput.set).size();
+            System.out.println("------------dd input---------------");
+            System.out.println(fuzzInput.set);
+            System.out.println(fuzzInput.relatedMap);
+            System.out.println(fuzzInput.criticalChanges);
 
-            if ((size1 == size2) && (size1 == size3)) {
+            List<Integer> list1 = proddPlusD(fuzzInput.set);
+            List<Integer> list2  = proddPlus(fuzzInput.set);
+            List<Integer> list3  = prodd(fuzzInput.set);
+            List<Integer> list4  = proddD(fuzzInput.set);
+
+            int size1 = list1.size();
+            int size2 = list2.size();
+            int size3 = list3.size();
+            int size4 = list4.size();
+
+            if((size1 == size2) && (size1 == size3) && (size1 == size4)){
                 equal++;
             }
-            if ((size1 <= size2) && (size1 <= size3)) {
+            if((size1 <= size2) && (size1 <= size3) && (size1 <= size4)){
                 num1++;
             }
-            if ((size2 <= size1) && (size2 <= size3)) {
+            if((size2 <= size1) && (size2 <= size3) && (size1 <= size4)){
                 num2++;
             }
-            if ((size3 <= size2) && (size3 <= size1)) {
+            if((size3 <= size1) && (size3 <= size2) && (size1 <= size4)){
                 num3++;
+            }
+            if((size4 <= size1) && (size3 <= size2) && (size1 <= size3)){
+                num4++;
             }
 
             System.out.println("equal: " + equal);
             System.out.println("dd+D: " + num1);
             System.out.println("dd+: " + num2);
             System.out.println("dd: " + num3);
+            System.out.println("ddD: " + num4);
+
         }
     }
 
@@ -104,7 +121,7 @@ public class DD {
         List<Integer> delSet = sample(cPro);
 
         int loop = 0;
-        while (!testDone(cPro) && loop < 40) {
+        while (!testDone(cPro) && loop < 60){
             loop++;
 
             List<Integer> testSet = getTestSet(retSet, delSet);
@@ -183,7 +200,7 @@ public class DD {
         List<Integer> delSet = sample(cPro);
 
         int loop = 0;
-        while (!testDone(cPro) && loop < 40) {
+        while (!testDone(cPro) && loop < 60){
             loop++;
 
             List<Integer> testSet = getTestSet(retSet, delSet);
@@ -266,7 +283,7 @@ public class DD {
         }
 
         int loop = 0;
-        while (!testDone(cPro) && loop < 20) {
+        while (!testDone(cPro) || loop < 60){
             loop++;
             List<Integer> delSet = sample(cPro);
             if (delSet.size() == 0) {
@@ -292,6 +309,58 @@ public class DD {
                     if (delSet.contains(setd) && (cPro.get(setd) != 0) && (cPro.get(setd) != 1)) {
                         double delta = cRadio * cProTmp.get(setd);
                         cPro.set(setd, cProTmp.get(setd) + delta);
+                    }
+                }
+            }
+            System.out.println("cPro: " + cPro);
+
+        }
+        return retSet;
+    }
+
+    static List<Integer> proddD(List<Integer> set) {
+        List<Integer> retSet = set;
+        List<Double> cPro = new ArrayList<>();
+
+        for(int i = 0; i < set.size(); i++){
+            cPro.add(cSigma);
+        }
+
+        int loop = 0;
+        while (!testDone(cPro) && loop < 60){
+            loop++;
+            List<Integer> delSet = sample(cPro);
+            if(delSet.size() == 0){
+                break;
+            }
+            List<Integer> testSet = getTestSet(retSet,delSet);
+            List<Integer> tmpSet = new ArrayList<>(testSet);
+            for (int test: tmpSet) {
+                if(fuzzInput.relatedMap.containsKey(test)){
+                    getDependency(testSet, test);
+                }
+            }
+            delSet =  getTestSet(retSet,testSet);
+
+            int result = test(testSet);
+            System.out.println(loop + ": " + result + ": test: " + testSet);
+            if(result == PASS){
+                //PASS: cPro=0 dPro=0
+                for(int set0 = 0; set0 < cPro.size() ; set0++){
+                    if(!testSet.contains(set0)){
+                        cPro.set(set0,0.0);
+                    }
+                }
+                retSet = testSet;
+            }else {
+                //c_pro++
+                List<Double> cProTmp = new ArrayList<>(cPro);
+                double cRadio = computRatio(delSet,cProTmp) - 1;
+
+                for(int setd = 0; setd < cPro.size(); setd++){
+                    if(delSet.contains(setd) && (cPro.get(setd) != 0) && (cPro.get(setd) != 1)){
+                        double delta = cRadio * cProTmp.get(setd);
+                        cPro.set(setd,cProTmp.get(setd) + delta);
                     }
                 }
             }
@@ -484,8 +553,8 @@ public class DD {
     public static double computRatio(List<Integer> deleteconfig, List<Double> p) {
         double res = 0;
         double tmplog = 1;
-        for (int delc : deleteconfig) {
-            if ((p.get(delc) != 0) && (p.get(delc) != 1)) {
+        for(int delc: deleteconfig){
+            if((p.get(delc) != 0) ){
                 tmplog *= (1 - p.get(delc));
             }
         }
