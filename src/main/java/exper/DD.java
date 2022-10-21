@@ -32,7 +32,7 @@ public class DD {
     final static double dSigma = 0.1;
     final static double dRate = 0.1;
     final static int setSize = 6;
-    final static int relatedNum = 2;
+    final static int relatedNum = 5;
     final static int criticalNum = 2;
     static FuzzInput fuzzInput;
     static BufferedWriter bw;
@@ -47,16 +47,16 @@ public class DD {
 
     public static void main(String[] args) {
         //fuzzInput = fuzz();
-//        fuzzInput = fuzz(setSize,relatedNum, criticalNum);
-//        System.out.println("dd input:");
-//        System.out.println(fuzzInput.set);
-//        System.out.println(fuzzInput.relatedMap);
-//        System.out.println(fuzzInput.criticalChanges);
-//
-//        System.out.println("dd output:\n" + proddPlus(fuzzInput.set));
+        fuzzInput = fuzz(setSize,relatedNum, criticalNum);
+        System.out.println("dd input:");
+        System.out.println(fuzzInput.set);
+        System.out.println(fuzzInput.relatedMap);
+        System.out.println(fuzzInput.criticalChanges);
+
+        System.out.println("dd output:\n" + proddPlusMatrix(fuzzInput.set));
 
         //System.out.println("prodd output:\n" + prodd(fuzzInput.set));
-        batchTest();
+        //batchTest();
     }
 
     public static void batchTest() {
@@ -64,6 +64,7 @@ public class DD {
         int num2 = 0;
         int num3 = 0;
         int num4 = 0;
+        int num5 = 0;
         int equal = 0;
 
         for (int i = 0; i < 100; i++) {
@@ -77,26 +78,19 @@ public class DD {
             List<Integer> list2  = proddPlus(fuzzInput.set);
             List<Integer> list3  = prodd(fuzzInput.set);
             List<Integer> list4  = proddD(fuzzInput.set);
+            List<Integer> list5  = proddPlusMatrix(fuzzInput.set);
+
 
             int size1 = list1.size();
             int size2 = list2.size();
             int size3 = list3.size();
             int size4 = list4.size();
+            int size5 = list5.size();
 
-            if((size1 == size2) && (size1 == size3) && (size1 == size4)){
-                equal++;
-            }
-            if((size1 <= size2) && (size1 <= size3) && (size1 <= size4)){
-                num1++;
-            }
-            if((size2 <= size1) && (size2 <= size3) && (size1 <= size4)){
+            if(size2 < size5){
                 num2++;
-            }
-            if((size3 <= size1) && (size3 <= size2) && (size1 <= size4)){
-                num3++;
-            }
-            if((size4 <= size1) && (size3 <= size2) && (size1 <= size3)){
-                num4++;
+            } else if(size2 > size5){
+                num5++;
             }
 
             System.out.println("equal: " + equal);
@@ -104,6 +98,7 @@ public class DD {
             System.out.println("dd+: " + num2);
             System.out.println("dd: " + num3);
             System.out.println("ddD: " + num4);
+            System.out.println("dd+M: " + num5);
 
         }
     }
@@ -368,6 +363,135 @@ public class DD {
 
         }
         return retSet;
+    }
+
+    static List<Integer> proddPlusMatrix(List<Integer> set) {
+        List<Integer> retSet = set;
+        List<Double> cPro = new ArrayList<>();
+        Double[][] dPro = new Double[set.size()][set.size()];
+
+        for (int i = 0; i < set.size(); i++) {
+            cPro.add(cSigma);
+            for(int j = 0; j < set.size(); j++){
+                dPro[i][j] = dSigma;
+            }
+        }
+
+        List<Integer> delSet = sample(cPro);
+
+        int loop = 0;
+        while (!testDone(cPro) && loop < 60){
+            loop++;
+
+            List<Integer> testSet = getTestSet(retSet, delSet);
+            int result = test(testSet);
+            System.out.println(loop + ": " + result + ": test: " + testSet);
+            if (result == PASS) {
+                //PASS: cPro=0 dPro=0
+                for (int set0 = 0; set0 < cPro.size() ; set0++) {
+                    if (!testSet.contains(set0)) {
+                        cPro.set(set0, 0.0);
+                        for(int i = 0; i < dPro.length; i++){
+                            dPro[i][set0] = 0.0;
+                            dPro[set0][i] = 0.0;
+                        }
+                    }
+                }
+                retSet = testSet;
+                //delSet = sample(cPro);
+                int selectSetSize = retSet.size() - sample(cPro).size();
+                List<Double> tmpProList = new ArrayList<>();
+                for(int i = 0; i < dPro.length; i ++){
+                    double tmpPro = 0;
+                    for(int j = 0; j < dPro.length; j++){
+                        tmpPro += dPro[j][i];
+                    }
+                    tmpProList.add(i,tmpPro);
+                }
+                List<Double> avgPro = getAvgPro(cPro, tmpProList);
+                delSet = getTestSet(retSet, select(avgPro, selectSetSize));
+            } else if (result == FAL) {
+                //FAIL: d_pro=0 c_pro++
+                List<Double> cProTmp = new ArrayList<>(cPro);
+                double cRadio = computRatio(delSet, cProTmp) - 1;
+                for (int setd = 0; setd < cPro.size(); setd++) {
+                    if (delSet.contains(setd) && (cPro.get(setd) != 0) && (cPro.get(setd) != 1)) {
+                        double delta = cRadio * cProTmp.get(setd);
+                        cPro.set(setd, min(cProTmp.get(setd) + delta, 1.0));
+                    }
+                }
+                for (int set0 = 0; set0 < cPro.size() ; set0++) {
+                    if (testSet.contains(set0)) {
+                        for(int i = 0; i < dPro.length; i++){
+                            if(!testSet.contains(i)) {
+                                dPro[set0][i] = 0.0;
+                            }
+                        }
+                    }
+                }
+                int selectSetSize = retSet.size() - sample(cPro).size();
+                List<Double> tmpProList = new ArrayList<>();
+                for(int i = 0; i < dPro.length; i ++){
+                    double tmpPro = 0;
+                    for(int j = 0; j < dPro.length; j++){
+                        tmpPro += dPro[j][i];
+                    }
+                    tmpProList.add(i,tmpPro);
+                }
+                List<Double> avgPro = getAvgPro(cPro, tmpProList);
+                delSet = getTestSet(retSet, select(avgPro, selectSetSize));
+
+            } else {
+                //CE: d_pro++
+                double tmplog = 1;
+                for(int i = 0; i < testSet.size(); i++){
+                    for(int j = 0; j < delSet.size(); j++){
+                        //有没可能等于1
+                        if((dPro[testSet.get(i)][delSet.get(j)] != 0) ){
+                            tmplog *= (1 - dPro[testSet.get(i)][delSet.get(j)]);
+                        }
+                    }
+                }
+                for(int i = 0; i < testSet.size(); i++){
+                    for(int j = 0; j < delSet.size(); j++){
+                        if((dPro[testSet.get(i)][delSet.get(j)] != 0) ){
+                            dPro[testSet.get(i)][delSet.get(j)] = min(dPro[testSet.get(i)][delSet.get(j)] / (1 - tmplog), 1.0);
+                        }
+                    }
+                }
+
+                int selectSetSize = retSet.size() - sample(cPro).size();
+                List<Double> tmpProList = new ArrayList<>();
+                for(int i = 0; i < dPro.length; i ++){
+                    double tmpPro = 0;
+                    for(int j = 0; j < dPro.length; j++){
+                        tmpPro += dPro[j][i];
+                    }
+                    tmpProList.add(i,tmpPro);
+                }
+                List<Double> avgPro = getAvgPro(cPro, tmpProList);
+                delSet = getTestSet(retSet, select(avgPro, selectSetSize));
+            }
+            System.out.println("cPro: " + cPro);
+            System.out.println("dPro: " + Arrays.deepToString(dPro));
+
+            if (delSet.size() == 0) {
+                break;
+            }
+        }
+        return retSet;
+    }
+
+    static void saveModel(FuzzInput fuzzinput, List<Integer> retSet) throws IOException {
+        DDModel outputModel = new DDModel();
+        outputModel.setFuzzInput(fuzzInput);
+        outputModel.setResult(retSet);
+        modelManager.saveModel(outputModel);
+    }
+
+    static void loadModel(String path) throws IOException {
+        DDModel ddModel = modelManager.loadModel(path);
+        fuzzInput = ddModel.getFuzzInput();
     }
 
     static List<Integer> proddToSaveModelDemo(List<Integer> set) throws IOException {
