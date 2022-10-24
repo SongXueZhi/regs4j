@@ -1,6 +1,5 @@
 package experiment;
 
-import experiment.internal.DDInput;
 import experiment.internal.DDOutput;
 import experiment.internal.DeltaDebugging;
 import experiment.internal.TestRunner;
@@ -8,26 +7,21 @@ import experiment.internal.TestRunner.status;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static utils.DDUtil.*;
 
-/**
- * @Author: sxz
- * @Date: 2022/10/21/16:55
- * @Description:
- */
-public class ProDDPlus implements DeltaDebugging {
+
+public class ProDDPlusD implements DeltaDebugging {
     final static double cSigma = 0.1;
     final static double dSigma = 0.1;
     final static double dRate = 0.1;
-    DDInput ddInput;
+    FuzzInput ddInput;
     TestRunner testRunner;
 
-    public ProDDPlus(DDInput ddInput, TestRunner testRunner) {
+    public ProDDPlusD(FuzzInput ddInput, TestRunner testRunner) {
         this.ddInput = ddInput;
         this.testRunner = testRunner;
     }
@@ -47,6 +41,14 @@ public class ProDDPlus implements DeltaDebugging {
         List<Integer> testSet = getTestSet(retSet, delSet);
         while (!testDone(cPro) && loop < 60){
             loop++;
+            List<Integer> tmpSet = new ArrayList<>(testSet);
+            for (int test : tmpSet) {
+                if (ddInput.relatedMap.containsKey(test)) {
+                    getDependency(testSet, test);
+                }
+            }
+            delSet = getTestSet(retSet, testSet);
+
             status result = testRunner.getResult(testSet,ddInput);
             System.out.println(loop + ": test: " + testSet + " : " + result );
             if (result == status.PASS) {
@@ -58,11 +60,11 @@ public class ProDDPlus implements DeltaDebugging {
                     }
                 }
                 retSet = testSet;
-                delSet = sample(cPro);
-                testSet = getTestSet(retSet, delSet);
-//                int selectSetSize = retSet.size() - sample(cPro).size();
-//                List<Double> avgPro = getAvgPro(cPro, dPro);
-//                delSet = getTestSet(retSet, select(avgPro, selectSetSize));
+                Collections.sort(retSet);
+                int selectSetSize = retSet.size() - sample(cPro).size();
+                List<Double> avgPro = getAvgPro(cPro, dPro);
+                testSet = select(avgPro, selectSetSize);
+                Collections.sort(testSet);
             } else if (result == status.FAL) {
                 //FAIL: d_pro-- c_pro++
                 List<Double> cProTmp = new ArrayList<>(cPro);
@@ -85,7 +87,6 @@ public class ProDDPlus implements DeltaDebugging {
                 List<Double> avgPro = getAvgPro(cPro, dPro);
                 testSet = select(avgPro, selectSetSize);
                 Collections.sort(testSet);
-                delSet = getTestSet(retSet, testSet);
             } else {
                 //CE: d_pro++
                 List<Double> dProTmp = new ArrayList<>(dPro);
@@ -99,14 +100,23 @@ public class ProDDPlus implements DeltaDebugging {
                 List<Double> avgPro = getAvgPro(cPro, dPro);
                 testSet = select(avgPro, selectSetSize);
                 Collections.sort(testSet);
-                delSet = getTestSet(retSet, testSet);
             }
             System.out.println("cPro: " + cPro);
             System.out.println("dPro: " + dPro);
-            if (delSet.size() == 0) {
+            if (testSet.size() == retSet.size()) {
                 break;
             }
         }
         return new DDOutput(retSet);
+    }
+
+    public List<Integer> getDependency(List<Integer> testSet, int test) {
+        for (int dSet : ddInput.relatedMap.get(test)) {
+            if (!testSet.contains(dSet)) {
+                testSet.add(dSet);
+                getDependency(testSet, dSet);
+            }
+        }
+        return testSet;
     }
 }

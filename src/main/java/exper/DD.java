@@ -27,12 +27,12 @@ public class DD {
     final static int FAL = 1;
     final static int UNRESOLVED = -1;
     final static int MIN_SET_SIZE = 3;
-    final static int MAX_SET_SIZE = 200;
+    final static int MAX_SET_SIZE = 20;
     final static double cSigma = 0.1;
     final static double dSigma = 0.1;
     final static double dRate = 0.1;
     final static int setSize = 6;
-    final static int relatedNum = 5;
+    final static int relatedNum = 2;
     final static int criticalNum = 2;
     static FuzzInput fuzzInput;
     static BufferedWriter bw;
@@ -47,60 +47,58 @@ public class DD {
 
     public static void main(String[] args) {
         //fuzzInput = fuzz();
-        fuzzInput = fuzz(setSize,relatedNum, criticalNum);
-        System.out.println("dd input:");
-        System.out.println(fuzzInput.set);
-        System.out.println(fuzzInput.relatedMap);
-        System.out.println(fuzzInput.criticalChanges);
-
-        System.out.println("dd output:\n" + proddPlusMatrix(fuzzInput.set));
-
-        //System.out.println("prodd output:\n" + prodd(fuzzInput.set));
-        //batchTest();
+//        fuzzInput = fuzz(setSize,relatedNum, criticalNum);
+//        System.out.println("dd input:");
+//        System.out.println(fuzzInput.set);
+//        System.out.println(fuzzInput.relatedMap);
+//        System.out.println(fuzzInput.criticalChanges);
+//
+//        System.out.println("prodd+ output:\n" + proddPlus(fuzzInput.set));
+//
+//        System.out.println("prodd output:\n" + prodd(fuzzInput.set));
+        batchTest();
     }
 
     public static void batchTest() {
-        int num1 = 0;
-        int num2 = 0;
-        int num3 = 0;
-        int num4 = 0;
-        int num5 = 0;
-        int equal = 0;
+        List<Integer> count = new ArrayList<>(List.of(0,0,0,0,0));
 
         for (int i = 0; i < 100; i++) {
-            fuzzInput = fuzz(setSize, relatedNum, criticalNum);
+            fuzzInput = fuzz();
             System.out.println("------------dd input---------------");
             System.out.println(fuzzInput.set);
             System.out.println(fuzzInput.relatedMap);
             System.out.println(fuzzInput.criticalChanges);
 
             List<Integer> list1 = proddPlusD(fuzzInput.set);
-            List<Integer> list2  = proddPlus(fuzzInput.set);
-            List<Integer> list3  = prodd(fuzzInput.set);
+            List<Integer> list2 = proddPlus(fuzzInput.set);
+            List<Integer> list3 = prodd(fuzzInput.set);
             List<Integer> list4  = proddD(fuzzInput.set);
             List<Integer> list5  = proddPlusMatrix(fuzzInput.set);
-
+            System.out.println("prodd+D output:\n" + list1);
+            System.out.println("prodd+ output:\n" + list2);
+            System.out.println("prodd output:\n" + list3);
+            System.out.println("proddD output:\n" + list4);
+            System.out.println("prodd+M output:\n" + list5);
 
             int size1 = list1.size();
             int size2 = list2.size();
             int size3 = list3.size();
             int size4 = list4.size();
             int size5 = list5.size();
-
-            if(size2 < size5){
-                num2++;
-            } else if(size2 > size5){
-                num5++;
+            List<Integer> list = selectMinSize(new ArrayList<>(List.of(size1,size2,size3,size4,size5)));
+            for(int j = 0; j < count.size(); j++){
+                if(list.contains(j)){
+                    count.set(j, count.get(j) + 1);
+                }
             }
-
-            System.out.println("equal: " + equal);
-            System.out.println("dd+D: " + num1);
-            System.out.println("dd+: " + num2);
-            System.out.println("dd: " + num3);
-            System.out.println("ddD: " + num4);
-            System.out.println("dd+M: " + num5);
-
         }
+
+        System.out.println("dd+D: " + count.get(0));
+        System.out.println("dd+: " + count.get(1));
+        System.out.println("dd: " + count.get(2));
+        System.out.println("ddD: " + count.get(3));
+        System.out.println("dd+M: " + count.get(4));
+
     }
 
     static List<Integer> proddPlus(List<Integer> set) {
@@ -116,7 +114,7 @@ public class DD {
         List<Integer> delSet = sample(cPro);
 
         int loop = 0;
-        while (!testDone(cPro) && loop < 60){
+        while (!testDone(cPro) && loop < 200){
             loop++;
 
             List<Integer> testSet = getTestSet(retSet, delSet);
@@ -131,10 +129,10 @@ public class DD {
                     }
                 }
                 retSet = testSet;
-                //delSet = sample(cPro);
-                int selectSetSize = retSet.size() - sample(cPro).size();
-                List<Double> avgPro = getAvgPro(cPro, dPro);
-                delSet = getTestSet(retSet, select(avgPro, selectSetSize));
+                delSet = sample(cPro);
+//                int selectSetSize = retSet.size() - sample(cPro).size();
+//                List<Double> avgPro = getAvgPro(cPro, dPro);
+//                delSet = getTestSet(retSet, select(avgPro, selectSetSize));
             } else if (result == FAL) {
                 //FAIL: d_pro-- c_pro++
                 List<Double> cProTmp = new ArrayList<>(cPro);
@@ -195,7 +193,7 @@ public class DD {
         List<Integer> delSet = sample(cPro);
 
         int loop = 0;
-        while (!testDone(cPro) && loop < 60){
+        while (!testDone(cPro) && loop < 200){
             loop++;
 
             List<Integer> testSet = getTestSet(retSet, delSet);
@@ -278,7 +276,7 @@ public class DD {
         }
 
         int loop = 0;
-        while (!testDone(cPro) || loop < 60){
+        while (!testDone(cPro)){
             loop++;
             List<Integer> delSet = sample(cPro);
             if (delSet.size() == 0) {
@@ -322,7 +320,7 @@ public class DD {
         }
 
         int loop = 0;
-        while (!testDone(cPro) && loop < 60){
+        while (!testDone(cPro) && loop < 200){
             loop++;
             List<Integer> delSet = sample(cPro);
             if(delSet.size() == 0){
@@ -380,7 +378,7 @@ public class DD {
         List<Integer> delSet = sample(cPro);
 
         int loop = 0;
-        while (!testDone(cPro) && loop < 60){
+        while (!testDone(cPro) && loop < 200){
             loop++;
 
             List<Integer> testSet = getTestSet(retSet, delSet);
@@ -582,7 +580,7 @@ public class DD {
         int maxRelatedNum = max((setSize / 2) - 1, 0);
         int maxCriticalNum = max((setSize / 2) - 1, 0);
         int relatedNum = RandomUtils.nextInt(0, maxRelatedNum);
-        int criticalNum = RandomUtils.nextInt(0, maxCriticalNum);
+        int criticalNum = 2;
 
         return fuzz(setSize, relatedNum, criticalNum);
     }
@@ -678,7 +676,8 @@ public class DD {
         double res = 0;
         double tmplog = 1;
         for(int delc: deleteconfig){
-            if((p.get(delc) != 0) ){
+            //todo
+            if((p.get(delc) != 0)){
                 tmplog *= (1 - p.get(delc));
             }
         }
@@ -845,5 +844,20 @@ public class DD {
             }
         }
         return testSet;
+    }
+
+    public static List<Integer> selectMinSize(List<Integer> size){
+        int tmp = size.get(0);
+        List<Integer> res = new ArrayList<>(List.of(0));
+        for (int i = 0; i < size.size(); i++){
+            if(size.get(i) < tmp){
+                tmp = size.get(i);
+                res.clear();
+                res.add(i);
+            } else if(size.get(i) == tmp){
+                res.add(i);
+            }
+        }
+        return res;
     }
 }

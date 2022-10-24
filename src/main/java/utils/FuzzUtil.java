@@ -19,7 +19,7 @@ import static java.lang.Math.max;
  */
 public class FuzzUtil {
     final static int MIN_SET_SIZE = 3;
-    final static int MAX_SET_SIZE = 200;
+    final static int MAX_SET_SIZE = 20;
 
     public static FuzzInput createFuzzInput(int setSize, int relatedNum, int criticalNum) {
         if (setSize < MIN_SET_SIZE) {

@@ -9,5 +9,10 @@ import java.util.List;
  * @Description:
  */
 public class DDOutput {
-    List<Integer> resultIndexList;
+    public List<Integer> resultIndexList;
+
+    public DDOutput(List<Integer> resultIndexList) {
+        this.resultIndexList = resultIndexList;
+    }
+
 }
