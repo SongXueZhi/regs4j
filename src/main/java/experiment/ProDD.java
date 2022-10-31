@@ -26,7 +26,7 @@ public class ProDD implements DeltaDebugging {
     }
 
     @Override
-    public DDOutput run() {
+    public DDOutputWithLoop run() {
         List<Integer> retSet = new ArrayList<>(ddInput.fullSet);
         List<Double> cPro = new ArrayList<>();
         for (int i = 0; i < ddInput.fullSet.size(); i++) {
@@ -41,7 +41,7 @@ public class ProDD implements DeltaDebugging {
             }
             List<Integer> testSet = getTestSet(retSet, delSet);
             status result = testRunner.getResult(testSet,ddInput);
-            System.out.println(loop + ": test: " + testSet + " : " + result );
+            //System.out.println(loop + ": test: " + testSet + " : " + result );
             if (result == status.PASS) {
                 //PASS: cPro=0 dPro=0
                 for (int set0 = 0; set0 < cPro.size(); set0++) {
@@ -62,8 +62,10 @@ public class ProDD implements DeltaDebugging {
                     }
                 }
             }
-            System.out.println("cPro: " + cPro);
+            //System.out.println("cPro: " + cPro);
         }
-        return new DDOutput(retSet);
+        DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
+        ddOutputWithLoop.loop = loop;
+        return ddOutputWithLoop;
     }
 }

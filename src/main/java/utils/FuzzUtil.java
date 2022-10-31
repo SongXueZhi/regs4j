@@ -18,8 +18,8 @@ import static java.lang.Math.max;
  * @Description:
  */
 public class FuzzUtil {
-    final static int MIN_SET_SIZE = 3;
-    final static int MAX_SET_SIZE = 20;
+    final static int MIN_SET_SIZE = 50;
+    final static int MAX_SET_SIZE = 500;
 
     public static FuzzInput createFuzzInput(int setSize, int relatedNum, int criticalNum) {
         if (setSize < MIN_SET_SIZE) {
@@ -42,7 +42,7 @@ public class FuzzUtil {
         int maxRelatedNum = max((setSize / 2) - 1, 0);
         int maxCriticalNum = max((setSize / 2) - 1, 0);
         int relatedNum = RandomUtils.nextInt(0, maxRelatedNum);
-        int criticalNum = RandomUtils.nextInt(0, maxCriticalNum);
+        int criticalNum = 20;
 
         return createFuzzInput(setSize, relatedNum, criticalNum);
     }

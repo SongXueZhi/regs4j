@@ -22,6 +22,7 @@ public class DDContext {
     public Map<String, DDOutput> start() {
         Map<String, DDOutput> ddOutputMap = new HashMap<>();
         for (DeltaDebugging dd : ddStrategyList){
+//            System.out.println("\n--------" + dd.getClass().getName() + "--------");
            ddOutputMap.put(dd.getClass().getName(),dd.run());
         }
        return ddOutputMap;

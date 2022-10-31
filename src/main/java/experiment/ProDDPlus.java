@@ -8,11 +8,9 @@ import experiment.internal.TestRunner.status;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import static java.lang.Math.*;
 import static utils.DDUtil.*;
 
 /**
@@ -45,7 +43,7 @@ public class ProDDPlus implements DeltaDebugging {
         int loop = 0;
         List<Integer> delSet = sample(cPro);
         List<Integer> testSet = getTestSet(retSet, delSet);
-        while (!testDone(cPro) && loop < 60){
+        while (!testDone(cPro) &&loop < pow(ddInput.fullSet.size(), 2)){
             loop++;
             status result = testRunner.getResult(testSet,ddInput);
             System.out.println(loop + ": test: " + testSet + " : " + result );

@@ -4,9 +4,11 @@ import experiment.internal.DDOutput;
 import experiment.internal.DeltaDebugging;
 import experiment.internal.TestRunner;
 import experiment.internal.TestRunner.status;
+import utils.DDUtil;
 
 import java.util.*;
 
+import static java.lang.Math.pow;
 import static utils.DDUtil.*;
 
 
@@ -28,19 +30,14 @@ public class ProDDD implements DeltaDebugging {
             cPro.add(cSigma);
         }
         int loop = 0;
-        while (!testDone(cPro) && loop < 60) {
+        while (!testDone(cPro) && loop < pow(ddInput.fullSet.size(), 2)) {
             loop++;
             List<Integer> delSet = sample(cPro);
             if (delSet.size() == 0) {
                 break;
             }
             List<Integer> testSet = getTestSet(retSet, delSet);
-            List<Integer> tmpSet = new ArrayList<>(testSet);
-            for (int test: tmpSet) {
-                if(ddInput.relatedMap.containsKey(test)){
-                    getDependency(testSet, test);
-                }
-            }
+            DDUtil.getTestSetWithDependency(testSet, ddInput.relatedMap);
             delSet =  getTestSet(retSet,testSet);
 
             status result = testRunner.getResult(testSet,ddInput);
@@ -71,16 +68,6 @@ public class ProDDD implements DeltaDebugging {
             }
         }
         return new DDOutput(retSet);
-    }
-
-    public List<Integer> getDependency(List<Integer> testSet, int test) {
-        for (int dSet : ddInput.relatedMap.get(test)) {
-            if (!testSet.contains(dSet)) {
-                testSet.add(dSet);
-                getDependency(testSet, dSet);
-            }
-        }
-        return testSet;
     }
 
 }

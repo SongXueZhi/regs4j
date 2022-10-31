@@ -1,5 +1,9 @@
 package utils;
 
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
+import org.apache.commons.lang3.RandomUtils;
+
 import java.util.*;
 
 import static java.lang.Math.abs;
@@ -56,6 +60,7 @@ public class DDUtil {
         return delSet;
     }
 
+    //从小到大排序
     private static List<Integer> sortToIndex(List<Double> p) {
         List<Integer> idxlist = new ArrayList<>();
         Map<Integer, Double> pidxMap = new HashMap<>();
@@ -65,7 +70,12 @@ public class DDUtil {
         List<Map.Entry<Integer, Double>> entrys = new ArrayList<>(pidxMap.entrySet());
         entrys.sort(new Comparator<Map.Entry>() {
             public int compare(Map.Entry o1, Map.Entry o2) {
-                return (int) ((double) o1.getValue() * 100000 - (double) o2.getValue() * 100000);
+                //return (int) ((double) o1.getValue() * 100000 - (double) o2.getValue() * 100000);
+                if(((double)o1.getValue() - (double)o2.getValue())<0)
+                    return -1;
+                else if(((double)o1.getValue() - (double)o2.getValue())>0)
+                    return 1;
+                else return 0;
             }
         });
         for (Map.Entry<Integer, Double> entry : entrys) {
@@ -85,15 +95,15 @@ public class DDUtil {
     }
 
     public static double computRatio(List<Integer> deleteconfig, List<Double> p) {
-        double res = 0;
-        double tmplog = 1;
+        double res = 0.0;
+        double tmplog = 1.0;
         for(int delc: deleteconfig){
             //todo
             if((p.get(delc) != 0)){
-                tmplog *= (1 - p.get(delc));
+                tmplog *= (1.0 - p.get(delc));
             }
         }
-        res = 1 / (1 - tmplog);
+        res = 1.0 / (1.0 - tmplog);
         return res;
     }
 
@@ -139,6 +149,71 @@ public class DDUtil {
 
     }
 
+    public static void addDependency(List<Integer> testSet, MultiValuedMap<Integer,Integer> relatedMap, int test) {
+        for (int dSet : relatedMap.get(test)) {
+            if (!testSet.contains(dSet)) {
+                testSet.add(dSet);
+                addDependency(testSet, relatedMap, dSet);
+            }
+        }
+    }
 
+    public static List<Integer> getTestSetWithDependency(List<Integer> testSet, MultiValuedMap<Integer,Integer> relatedMap){
+        Set<Integer> tmpSet = new HashSet<>();
+        for (int test : testSet) {
+            if (relatedMap.containsKey(test)) {
+                tmpSet.addAll(getDependency(relatedMap, test));
+            }
+        }
+        for (int tmp : tmpSet){
+            if(!testSet.contains(tmp)){
+                testSet.add(tmp);
+            }
+        }
+        return testSet;
+    }
+
+    //判断testSet是否为全集，是的话加上所有的概率为1.0的元素，执行轮盘赌选择
+    public static List<Integer> realTestSet(List<Integer> retSet, List<Integer> testSet, MultiValuedMap<Integer,Integer> relatedMap, List<Double> cPro){
+        testSet = DDUtil.getTestSetWithDependency(testSet, relatedMap);
+        if(testSet.size() == retSet.size()){
+            testSet.clear();
+            List<Double> cProTmp = new ArrayList<>(cPro);
+            for(int i = 0; i < cPro.size(); i++){
+                if(cPro.get(i) == 1.0) {
+                    testSet.add(i);
+                    cProTmp.set(i, 0.0);
+                }
+            }
+            //如果只有一个元素的概率不为1，这时不用加上轮盘赌
+            if(testSet.size() + 1 == retSet.size()){
+                return testSet;
+            }
+            int selectNum = RandomUtils.nextInt(1, retSet.size() - testSet.size());
+            for(int sel: select(cProTmp,selectNum)){
+                if(!testSet.contains(sel)){
+                    testSet.add(sel);
+                }
+            }
+            testSet = realTestSet(retSet,testSet,relatedMap,cPro);
+            return testSet;
+        } else {
+            return testSet;
+        }
+    }
+
+    //得到递归的依赖
+    public static List<Integer> getDependency(MultiValuedMap<Integer,Integer> relatedMap, int test) {
+        Set<Integer> dependency = new HashSet<>();
+        for (int dSet : relatedMap.get(test)) {
+            if (!dependency.contains(dSet)) {
+                dependency.add(dSet);
+                MultiValuedMap<Integer,Integer> tmpRelatedMap = new ArrayListValuedHashMap<>(relatedMap);
+                tmpRelatedMap.removeMapping(test,dSet);
+                dependency.addAll(getDependency(tmpRelatedMap, dSet));
+            }
+        }
+        return new ArrayList<>(dependency);
+    }
 
 }

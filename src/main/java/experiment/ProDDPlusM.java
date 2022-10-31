@@ -11,8 +11,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.pow;
 import static utils.DDUtil.*;
 
 
@@ -42,7 +42,7 @@ public class ProDDPlusM implements DeltaDebugging {
         int loop = 0;
         List<Integer> delSet = sample(cPro);
         List<Integer> testSet = getTestSet(retSet, delSet);
-        while (!testDone(cPro) && loop < 60){
+        while (!testDone(cPro) && loop < pow(ddInput.fullSet.size(), 2)){
             loop++;
             status result = testRunner.getResult(testSet,ddInput);
             System.out.println(loop + ": test: " + testSet + " : " + result );
@@ -97,6 +97,15 @@ public class ProDDPlusM implements DeltaDebugging {
                     }
                 }
             }
+
+
+
+
+
+
+
+
+
             int selectSetSize = retSet.size() - sample(cPro).size();
             List<Double> tmpProList = new ArrayList<>();
             for(int i = 0; i < dPro.length; i ++){
@@ -112,7 +121,9 @@ public class ProDDPlusM implements DeltaDebugging {
             delSet = getTestSet(retSet, testSet);
 
             System.out.println("cPro: " + cPro);
-            System.out.println("dPro: " + Arrays.deepToString(dPro));
+            for(int i = 0; i < dPro.length; i++){
+                System.out.println(Arrays.deepToString(dPro[i]));
+            }
             if (delSet.size() == 0) {
                 break;
             }
