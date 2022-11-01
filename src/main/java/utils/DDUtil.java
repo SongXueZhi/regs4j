@@ -6,8 +6,7 @@ import org.apache.commons.lang3.RandomUtils;
 
 import java.util.*;
 
-import static java.lang.Math.abs;
-import static java.lang.Math.min;
+import static java.lang.Math.*;
 
 public class DDUtil {
 
@@ -149,21 +148,12 @@ public class DDUtil {
 
     }
 
-    public static void addDependency(List<Integer> testSet, MultiValuedMap<Integer,Integer> relatedMap, int test) {
-        for (int dSet : relatedMap.get(test)) {
-            if (!testSet.contains(dSet)) {
-                testSet.add(dSet);
-                addDependency(testSet, relatedMap, dSet);
-            }
-        }
-    }
-
+    //返回testSet以及其附带的所有依赖
     public static List<Integer> getTestSetWithDependency(List<Integer> testSet, MultiValuedMap<Integer,Integer> relatedMap){
         Set<Integer> tmpSet = new HashSet<>();
         for (int test : testSet) {
-            if (relatedMap.containsKey(test)) {
-                tmpSet.addAll(getDependency(relatedMap, test));
-            }
+            List<Integer> dependency = getDependency(relatedMap, test);
+            tmpSet.addAll(dependency);
         }
         for (int tmp : tmpSet){
             if(!testSet.contains(tmp)){
@@ -173,28 +163,59 @@ public class DDUtil {
         return testSet;
     }
 
-    //判断testSet是否为全集，是的话加上所有的概率为1.0的元素，执行轮盘赌选择
+    //判断testSet是否为全集，是的话加上所有的概率为1.0的元素，后执行轮盘赌选择
     public static List<Integer> realTestSet(List<Integer> retSet, List<Integer> testSet, MultiValuedMap<Integer,Integer> relatedMap, List<Double> cPro){
-        testSet = DDUtil.getTestSetWithDependency(testSet, relatedMap);
+        DDUtil.getTestSetWithDependency(testSet, relatedMap);
         if(testSet.size() == retSet.size()){
             testSet.clear();
             List<Double> cProTmp = new ArrayList<>(cPro);
+            int s = 0;//概率不为0的元素的个数
             for(int i = 0; i < cPro.size(); i++){
                 if(cPro.get(i) == 1.0) {
                     testSet.add(i);
                     cProTmp.set(i, 0.0);
+                }else if(cPro.get(i) != 0.0){
+                    s++;
                 }
             }
-            //如果只有一个元素的概率不为1，这时不用加上轮盘赌
+
+//            //todo 如果剩下的所有概率不为1的元素为循环依赖，永远选全集，会死循环，怎么办呀
+//            //遍历所有元素，如果他带上了全集，则不能选该元素
+//            for(int i = 0; i < cProTmp.size(); i++){
+//                if(cProTmp.get(i) != 0){
+//                    List<Integer> tmpDependency = getDependency(relatedMap, i);
+//                    if(tmpDependency.size()+1 == s){ //说明该元素的依赖包括了剩下所有的元素
+//                        cProTmp.set(i, 0.0); //不能选此元素
+//                        s--;
+//                    }
+//                }
+//            }
+//            //没有可以选择的元素，所有的不为0的cPro设置为1，结束
+//            if(s == 0){
+//                for(int i = 0; i < cPro.size(); i++){
+//                    if(cPro.get(i) != 0){
+//                        cPro.set(i, 1.0);
+//                    }
+//                }
+//                return retSet;
+//            }
+            //如果只有一个元素的概率不为1，这时不用加上轮盘赌，单独判断该元素即可
             if(testSet.size() + 1 == retSet.size()){
                 return testSet;
             }
-            int selectNum = RandomUtils.nextInt(1, retSet.size() - testSet.size());
+
+            int selectNum = RandomUtils.nextInt(1, s);
             for(int sel: select(cProTmp,selectNum)){
                 if(!testSet.contains(sel)){
                     testSet.add(sel);
                 }
             }
+
+//            List<Integer> tmpTestSet = new ArrayList<>(testSet);
+//            DDUtil.getTestSetWithDependency(tmpTestSet, relatedMap);
+//            if(selectNum == 1 && tmpTestSet.size() == retSet.size()){
+//                return testSet;
+//            }
             testSet = realTestSet(retSet,testSet,relatedMap,cPro);
             return testSet;
         } else {
@@ -202,14 +223,14 @@ public class DDUtil {
         }
     }
 
-    //得到递归的依赖
+    //得到某个元素所有递归的依赖
     public static List<Integer> getDependency(MultiValuedMap<Integer,Integer> relatedMap, int test) {
         Set<Integer> dependency = new HashSet<>();
         for (int dSet : relatedMap.get(test)) {
             if (!dependency.contains(dSet)) {
                 dependency.add(dSet);
                 MultiValuedMap<Integer,Integer> tmpRelatedMap = new ArrayListValuedHashMap<>(relatedMap);
-                tmpRelatedMap.removeMapping(test,dSet);
+                tmpRelatedMap.remove(test);
                 dependency.addAll(getDependency(tmpRelatedMap, dSet));
             }
         }
