@@ -1,16 +1,11 @@
 package experiment;
 
-import experiment.internal.DDOutput;
 import experiment.internal.DeltaDebugging;
 import experiment.internal.TestRunner;
 import experiment.internal.TestRunner.status;
-import org.apache.commons.lang3.RandomUtils;
-import utils.DDUtil;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 import static java.lang.Math.*;
 import static utils.DDUtil.*;
@@ -47,7 +42,7 @@ public class ProDDProD implements DeltaDebugging {
             }
             List<Integer> testSet = getTestSet(retSet, delSet);
             //带上依赖关系
-            testSet = DDUtil.realTestSet(retSet,testSet, ddInput.relatedMap, cPro);
+            testSet = realTestSet(retSet,testSet, ddInput.relatedMap, cPro);
             delSet = getTestSet(retSet, testSet);
 
             status result = testRunner.getResult(testSet,ddInput);

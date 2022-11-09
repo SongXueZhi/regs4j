@@ -8,7 +8,6 @@ import experiment.internal.TestRunner.status;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static java.lang.Math.min;
@@ -29,7 +28,7 @@ public class ProDDPlusM implements DeltaDebugging {
     }
 
     @Override
-    public DDOutput run() {
+    public DDOutputWithLoop run() {
         List<Integer> retSet = new ArrayList<>(ddInput.fullSet);
         List<Double> cPro = new ArrayList<>();
         Double[][] dPro = new Double[ddInput.fullSet.size()][ddInput.fullSet.size()];
@@ -37,13 +36,26 @@ public class ProDDPlusM implements DeltaDebugging {
             cPro.add(cSigma);
             for(int j = 0; j < ddInput.fullSet.size(); j++){
                 dPro[i][j] = dSigma;
-            }        }
+                if(i == j){
+                    dPro[i][j] = 0.0;
+                }
+            }
+        }
 
         int loop = 0;
-        List<Integer> delSet = sample(cPro);
-        List<Integer> testSet = getTestSet(retSet, delSet);
-        while (!testDone(cPro) && loop < pow(ddInput.fullSet.size(), 2)){
-            loop++;
+
+        //while (!testDone(cPro) && loop < pow(ddInput.fullSet.size(), 2)){
+        while (!testDone(cPro)){
+                loop++;
+            List<Integer> delSet = sample(cPro);
+            if (delSet.size() == 0) {
+                break;
+            }
+            List<Integer> testSet = getTestSet(retSet, delSet);
+            //todo 使用增益公式带上一些可能的依赖，感觉这里很容易带上所有的元素
+            testSet = getRealTestSet(testSet, dPro, retSet, cPro);
+            delSet = getTestSet(retSet, testSet);
+
             status result = testRunner.getResult(testSet,ddInput);
             System.out.println(loop + ": test: " + testSet + " : " + result );
             if (result == status.PASS) {
@@ -60,13 +72,21 @@ public class ProDDPlusM implements DeltaDebugging {
                 retSet = testSet;
 
             } else if (result == status.FAL) {
-                //FAIL: d_pro-- c_pro++
+                //FAIL: d_pro=0 c_pro++
                 List<Double> cProTmp = new ArrayList<>(cPro);
-                double cRadio = computRatio(delSet, cProTmp) - 1;
+                double cRadio = computRatio(delSet, cProTmp) - 1.0;
                 for (int setd = 0; setd < cPro.size(); setd++) {
                     if (delSet.contains(setd) && (cPro.get(setd) != 0) && (cPro.get(setd) != 1)) {
                         double delta = cRadio * cProTmp.get(setd);
                         cPro.set(setd, min(cProTmp.get(setd) + delta, 1.0));
+                        //如果一个dPro为1，即确定了依赖关系，也将cPro设为1
+                        if(cPro.get(setd) == 1.0){
+                            //获取所有确定的依赖关系
+                            List<Integer> dependency = getDependency(dPro, setd);
+                            for(int j = 0; j < dependency.size(); j++){
+                                cPro.set(dependency.get(j), 1.0);
+                            }
+                        }
                     }
                 }
                 for (int setd = 0; setd < cPro.size(); setd++) {
@@ -85,49 +105,29 @@ public class ProDDPlusM implements DeltaDebugging {
                     for (int j = 0; j < delSet.size(); j++) {
                         //有没可能等于1
                         if ((dPro[testSet.get(i)][delSet.get(j)] != 0)) {
-                            tmplog *= (1 - dPro[testSet.get(i)][delSet.get(j)]);
+                            tmplog *= (1.0 - dPro[testSet.get(i)][delSet.get(j)]);
                         }
                     }
                 }
                 for (int i = 0; i < testSet.size(); i++) {
                     for (int j = 0; j < delSet.size(); j++) {
                         if ((dPro[testSet.get(i)][delSet.get(j)] != 0)) {
-                            dPro[testSet.get(i)][delSet.get(j)] = min(dPro[testSet.get(i)][delSet.get(j)] / (1 - tmplog), 1.0);
+                            dPro[testSet.get(i)][delSet.get(j)] = min(dPro[testSet.get(i)][delSet.get(j)] / (1.0 - tmplog), 1.0);
+                            //确定了一个依赖，依赖的元素如果cPro已经为1，那么被依赖的元素概率设为1
+                            if(dPro[testSet.get(i)][delSet.get(j)] == 1.0 && cPro.get(testSet.get(i)) == 1.0){
+                                cPro.set(delSet.get(j), 1.0);
+                            }
                         }
                     }
                 }
             }
-
-
-
-
-
-
-
-
-
-            int selectSetSize = retSet.size() - sample(cPro).size();
-            List<Double> tmpProList = new ArrayList<>();
-            for(int i = 0; i < dPro.length; i ++){
-                double tmpPro = 0;
-                for(int j = 0; j < dPro.length; j++){
-                    tmpPro += dPro[j][i];
-                }
-                tmpProList.add(i,tmpPro);
-            }
-            List<Double> avgPro = getAvgPro(cPro, tmpProList);
-            testSet = select(avgPro, selectSetSize);
-            Collections.sort(testSet);
-            delSet = getTestSet(retSet, testSet);
-
             System.out.println("cPro: " + cPro);
             for(int i = 0; i < dPro.length; i++){
                 System.out.println(Arrays.deepToString(dPro[i]));
             }
-            if (delSet.size() == 0) {
-                break;
-            }
         }
-        return new DDOutput(retSet);
+        DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
+        ddOutputWithLoop.loop = loop;
+        return ddOutputWithLoop;
     }
 }

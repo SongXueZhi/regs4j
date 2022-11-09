@@ -32,6 +32,7 @@ public class DDUtil {
         double last = -9999;
         int i = 0;
         while (i < prob.size()) {
+            //概率为0不考虑在内
             if (prob.get(idxlist.get(i)) == 0) {
                 k = k + 1;
                 i = i + 1;
@@ -56,6 +57,42 @@ public class DDUtil {
             delSet.add(idxlist.get(i));
         }
 
+        return delSet;
+    }
+
+    public static List<Integer> sample(Double[] iProb) {
+        List<Double> prob = new ArrayList<>(Arrays.asList(iProb));
+        List<Integer> delSet = new ArrayList<>();
+        List<Integer> idxlist = sortToIndex(prob);
+
+        int k = 0;
+        double tmp = 1;
+        double last = -9999;
+        int i = 0;
+        while (i < prob.size()) {
+            if (prob.get(idxlist.get(i)) == 0) {
+                k = k + 1;
+                i = i + 1;
+                continue;
+            }
+            if (!(prob.get(idxlist.get(i)) < 1)) {
+                break;
+            }
+            for (int j = k; j < i + 1; j++) {
+                tmp *= (1 - prob.get(idxlist.get(j)));
+            }
+            tmp *= (i - k + 1);
+            if (tmp < last) {
+                break;
+            }
+            last = tmp;
+            tmp = 1;
+            i = i + 1;
+        }
+        while (i > k) {
+            i = i - 1;
+            delSet.add(idxlist.get(i));
+        }
         return delSet;
     }
 
@@ -143,9 +180,7 @@ public class DDUtil {
                 }
             }
         }
-
         return selectSet;
-
     }
 
     //返回testSet以及其附带的所有依赖
@@ -165,7 +200,7 @@ public class DDUtil {
 
     //判断testSet是否为全集，是的话加上所有的概率为1.0的元素，后执行轮盘赌选择
     public static List<Integer> realTestSet(List<Integer> retSet, List<Integer> testSet, MultiValuedMap<Integer,Integer> relatedMap, List<Double> cPro){
-        DDUtil.getTestSetWithDependency(testSet, relatedMap);
+        getTestSetWithDependency(testSet, relatedMap);
         if(testSet.size() == retSet.size()){
             testSet.clear();
             List<Double> cProTmp = new ArrayList<>(cPro);
@@ -179,7 +214,7 @@ public class DDUtil {
                 }
             }
 
-//            //todo 如果剩下的所有概率不为1的元素为循环依赖，永远选全集，会死循环，怎么办呀
+//            //todo 如果剩下的所有概率不为1的元素为循环依赖，永远选全集，会死循环，怎么办呀，暂时不处理
 //            //遍历所有元素，如果他带上了全集，则不能选该元素
 //            for(int i = 0; i < cProTmp.size(); i++){
 //                if(cProTmp.get(i) != 0){
@@ -223,6 +258,89 @@ public class DDUtil {
         }
     }
 
+    //得到testSet及其所有可能的依赖
+    public static List<Integer> getProDependency(List<Integer> testSet, Double[][] dPro, List<Integer> retSet){
+        for(int i = 0; i < testSet.size(); i++){
+            List<Double> idPro = new ArrayList<>(Arrays.asList(dPro[testSet.get(i)]));
+            List<Integer> delDependency = sample(idPro);
+            List<Integer> addDependency = getTestSet(retSet,delDependency);
+            for(Integer add: addDependency){
+                //删掉addDependency中包含的概率为0的元素
+                if(!testSet.contains(add) && dPro[testSet.get(i)][add] != 0){
+                    testSet.add(add);
+                }
+            }
+        }
+        return testSet;
+    }
+
+    //得到testSet及其所有可能的依赖（在一定概率下失活）
+    public static List<Integer> getProDependencyWithEpsilon(List<Integer> testSet, Double[][] dPro, List<Integer> retSet){
+        List<Integer> addProDependency = new ArrayList<>();
+        for(int i = 0; i < testSet.size(); i++){
+            List<Double> idPro = new ArrayList<>(Arrays.asList(dPro[testSet.get(i)]));
+            List<Integer> delDependency = sample(idPro);
+            List<Integer> addDependency = getTestSet(retSet,delDependency);
+            for(Integer add: addDependency){
+                //删掉addDependency中包含的概率为0的元素
+                if(!testSet.contains(add) && !addProDependency.contains(add) && dPro[testSet.get(i)][add] != 0){
+                    addProDependency.add(add);
+                }
+            }
+        }
+        //dependency元素失活的概率 = |𝒅𝒆𝒑𝒆𝒏𝒅𝒆𝒏𝒄𝒚|/|𝒓𝒆𝒕𝑺𝒆𝒕| * (𝟏−𝒎𝒂𝒙(元素被依赖的概率))
+        double rate = (float)addProDependency.size() / (float)retSet.size();
+        for (Integer add : addProDependency){
+            double maxDependency = 0.0;
+            //取得被依赖的最大概率
+            for (Double[] doubles : dPro) {
+                if (doubles[add] > maxDependency) {
+                    maxDependency = doubles[add];
+                }
+            }
+            double epsilon = rate * (1 - maxDependency);
+            double slice =  Math.random();
+            if(slice < epsilon){
+                addProDependency.remove(add);
+            }
+        }
+        testSet.addAll(addProDependency);
+        return testSet;
+    }
+
+    //判断是否选择了全集，否则重新选
+    //轮盘赌重新选择后是否需要带上所有可能的依赖 ——是
+    public static List<Integer> getRealTestSet(List<Integer> testSet, Double[][] dPro, List<Integer> retSet, List<Double> cPro){
+        getProDependency(testSet, dPro,  retSet);
+        if(testSet.size() == retSet.size()){
+            testSet.clear();
+            List<Double> cProTmp = new ArrayList<>(cPro);
+            int s = 0;//概率不为0的元素的个数
+            for(int i = 0; i < cPro.size(); i++){
+                if(cPro.get(i) == 1.0) {
+                    testSet.add(i);
+                    cProTmp.set(i, 0.0);
+                }else if(cPro.get(i) != 0.0){
+                    s++;
+                }
+            }
+            if(testSet.size() + 1 == retSet.size()){
+                return testSet;
+            }
+
+            int selectNum = RandomUtils.nextInt(1, s);
+            for(int sel: select(cProTmp,selectNum)){
+                if(!testSet.contains(sel)){
+                    testSet.add(sel);
+                }
+            }
+            testSet = getRealTestSet(testSet, dPro, retSet, cPro);
+            return testSet;
+        } else {
+            return testSet;
+        }
+    }
+
     //得到某个元素所有递归的依赖
     public static List<Integer> getDependency(MultiValuedMap<Integer,Integer> relatedMap, int test) {
         Set<Integer> dependency = new HashSet<>();
@@ -232,6 +350,18 @@ public class DDUtil {
                 MultiValuedMap<Integer,Integer> tmpRelatedMap = new ArrayListValuedHashMap<>(relatedMap);
                 tmpRelatedMap.remove(test);
                 dependency.addAll(getDependency(tmpRelatedMap, dSet));
+            }
+        }
+        return new ArrayList<>(dependency);
+    }
+
+    //得到某个元素确定的所有递归的依赖
+    public static List<Integer> getDependency(Double[][] dPro, int test) {
+        Set<Integer> dependency = new HashSet<>();
+        for (int dSet = 0; dSet < dPro[test].length; dSet++) {
+            if (!dependency.contains(dSet) && dPro[test][dSet] == 1.0) {
+                dependency.add(dSet);
+                dependency.addAll(getDependency(dPro, dSet));
             }
         }
         return new ArrayList<>(dependency);
