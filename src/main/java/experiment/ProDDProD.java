@@ -68,7 +68,7 @@ public class ProDDProD implements DeltaDebugging {
                         double delta = cRadio * cProTmp.get(setd);
                         cPro.set(setd, min(cProTmp.get(setd) + delta, 1.0));
                         //如果一个元素概率为1，那么它的依赖的概率也要设为1
-                        //todo 如果依赖不确定，也只是概率的话这里要怎么处理呢
+                        //如果依赖不确定，也只是概率的话这里要怎么处理呢
                         if(cPro.get(setd) == 1.0){
                             List<Integer> dependency = getDependency(ddInput.relatedMap, setd);
                             for(int j = 0; j < dependency.size(); j++){

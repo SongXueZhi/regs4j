@@ -1,7 +1,6 @@
 package experiment;
 
 import experiment.internal.DDInput;
-import experiment.internal.DDOutput;
 import experiment.internal.DeltaDebugging;
 import experiment.internal.TestRunner;
 import experiment.internal.TestRunner.status;
@@ -9,18 +8,17 @@ import experiment.internal.TestRunner.status;
 import java.util.*;
 
 import static java.lang.Math.min;
-import static java.lang.Math.pow;
 import static utils.DDUtil.*;
 
 
-public class ProDDPlusM implements DeltaDebugging {
+public class ProDDPlusMmini implements DeltaDebugging {
     final static double cSigma = 0.1;
     final static double dSigma = 0.1;
     final static double dRate = 0.1;
     DDInput ddInput;
     TestRunner testRunner;
 
-    public ProDDPlusM(DDInput ddInput, TestRunner testRunner) {
+    public ProDDPlusMmini(DDInput ddInput, TestRunner testRunner) {
         this.ddInput = ddInput;
         this.testRunner = testRunner;
     }
@@ -77,9 +75,9 @@ public class ProDDPlusM implements DeltaDebugging {
                     if (delSet.contains(setd) && (cPro.get(setd) != 0) && (cPro.get(setd) != 1)) {
                         double delta = cRadio * cProTmp.get(setd);
                         cPro.set(setd, min(cProTmp.get(setd) + delta, 1.0));
-                        if(cPro.get(setd) >= 0.99){
-                            cPro.set(setd, 1.0);
-                        }
+//                        if(cPro.get(setd) >= 0.99){
+//                            cPro.set(setd, 1.0);
+//                        }
                         //如果一个dPro为1，即确定了依赖关系，也将其cPro设为1
                         if(cPro.get(setd) == 1.0){
                             //获取所有确定的依赖关系
@@ -114,15 +112,15 @@ public class ProDDPlusM implements DeltaDebugging {
                     }
                 }
                 //放大，概率变为10^n/10
-                tmplog = Math.pow(10.0, tmplog) / 10.0;
+                //tmplog = Math.pow(10.0, tmplog) / 10.0;
                 for (int i = 0; i < testSet.size(); i++) {
                     for (int j = 0; j < delSet.size(); j++) {
                         if ((dPro[testSet.get(i)][delSet.get(j)] != 0)) {
                             dPro[testSet.get(i)][delSet.get(j)] = min(dPro[testSet.get(i)][delSet.get(j)] / (1.0 - tmplog), 1.0);
                             //todo 因为有不能停下的情况和精度问题，暂时将大于0.99的情况视为1
-                            if(dPro[testSet.get(i)][delSet.get(j)] >= 0.99){
-                                dPro[testSet.get(i)][delSet.get(j)] = 1.0;
-                            }
+//                            if(dPro[testSet.get(i)][delSet.get(j)] >= 0.99){
+//                                dPro[testSet.get(i)][delSet.get(j)] = 1.0;
+//                            }
                             //确定了一个依赖，依赖的元素如果cPro已经为1，那么被依赖的元素概率设为1
                             if(dPro[testSet.get(i)][delSet.get(j)] == 1.0 && cPro.get(testSet.get(i)) == 1.0){
                                 cPro.set(delSet.get(j), 1.0);
@@ -132,9 +130,9 @@ public class ProDDPlusM implements DeltaDebugging {
                 }
             }
             System.out.println("cPro: " + cPro);
-//            for(int i = 0; i < dPro.length; i++){
-//                System.out.println(Arrays.deepToString(dPro[i]));
-//            }
+            for(int i = 0; i < dPro.length; i++){
+                System.out.println(Arrays.deepToString(dPro[i]));
+            }
         }
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = loop;
