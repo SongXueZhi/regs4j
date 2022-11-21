@@ -22,7 +22,7 @@ public class DDExample {
 //        FileOutputStream puts = new FileOutputStream(path,true);
 //        PrintStream out = new PrintStream(puts);
 //        System.setOut(out);
-        fuzzProDDPlusMmini();
+        fuzz();
 
     }
     public static Map<String, DDOutput> fuzzAll(){
@@ -130,6 +130,8 @@ public class DDExample {
 
             if (cc.size() == ProDDPlusMOut.resultIndexList.size()) {
                 ProDDPlusMOutCount++;
+            }else {
+                break;
             }
             if (cc.size() == ProDDOut.resultIndexList.size()) {
                 ProDDOutCount++;

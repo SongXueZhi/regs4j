@@ -28,7 +28,7 @@ public class DDUtil {
         List<Integer> idxlist = sortToIndex(prob);
 
         int k = 0;
-        double tmp = 1;
+        double tmp = 0.0;
         double last = -9999;
         int i = 0;
         while (i < prob.size()) {
@@ -42,14 +42,16 @@ public class DDUtil {
                 break;
             }
             for (int j = k; j < i + 1; j++) {
-                tmp *= (1 - prob.get(idxlist.get(j)));
+                //tmp *= (1 - prob.get(idxlist.get(j)));
+                tmp += Math.log(1.0 - prob.get(idxlist.get(j)));
             }
+            tmp = Math.pow(Math.E, tmp);
             tmp *= (i - k + 1);
             if (tmp < last) {
                 break;
             }
             last = tmp;
-            tmp = 1;
+            tmp = 0;
             i = i + 1;
         }
         while (i > k) {
@@ -57,42 +59,6 @@ public class DDUtil {
             delSet.add(idxlist.get(i));
         }
 
-        return delSet;
-    }
-
-    public static List<Integer> sample(Double[] iProb) {
-        List<Double> prob = new ArrayList<>(Arrays.asList(iProb));
-        List<Integer> delSet = new ArrayList<>();
-        List<Integer> idxlist = sortToIndex(prob);
-
-        int k = 0;
-        double tmp = 1;
-        double last = -9999;
-        int i = 0;
-        while (i < prob.size()) {
-            if (prob.get(idxlist.get(i)) == 0) {
-                k = k + 1;
-                i = i + 1;
-                continue;
-            }
-            if (!(prob.get(idxlist.get(i)) < 1)) {
-                break;
-            }
-            for (int j = k; j < i + 1; j++) {
-                tmp *= (1 - prob.get(idxlist.get(j)));
-            }
-            tmp *= (i - k + 1);
-            if (tmp < last) {
-                break;
-            }
-            last = tmp;
-            tmp = 1;
-            i = i + 1;
-        }
-        while (i > k) {
-            i = i - 1;
-            delSet.add(idxlist.get(i));
-        }
         return delSet;
     }
 
@@ -132,13 +98,14 @@ public class DDUtil {
 
     public static double computRatio(List<Integer> deleteconfig, List<Double> p) {
         double res = 0.0;
-        double tmplog = 1.0;
+        double tmplog = 0.0;
         for(int delc: deleteconfig){
-            //todo
             if((p.get(delc) != 0)){
-                tmplog *= (1.0 - p.get(delc));
+                //tmplog *= (1.0 - p.get(delc));
+                tmplog += Math.log(1.0 - p.get(delc));
             }
         }
+        tmplog = Math.pow(Math.E, tmplog);
         res = 1.0 / (1.0 - tmplog);
         return res;
     }
@@ -313,7 +280,7 @@ public class DDUtil {
         }
         testSet.addAll(addProDependency);
 
-        //todo 加上addProDependency确定的依赖吗？
+        //加上addProDependency确定的依赖（dPro为1的元素）？
         for(Integer addPro: addProDependency){
             Set<Integer> dependency = new HashSet<>();
             getDependency(dependency, dPro, addPro);
@@ -329,14 +296,14 @@ public class DDUtil {
     //判断是否选择了全集，否则重新选
     //轮盘赌重新选择后是否需要带上所有可能的依赖 ——是
     public static List<Integer> getProTestSet(List<Integer> testSet, Double[][] dPro, List<Integer> retSet, List<Double> cPro){
-        getProDependency(testSet, dPro,  retSet);
-        //getProDependencyWithEpsilon(testSet, dPro, retSet);
+        //getProDependency(testSet, dPro,  retSet);
+        getProDependencyWithEpsilon(testSet, dPro, retSet);
         int loop = 0;
         while (testSet.size() == retSet.size()){
             loop++;
             testSet.clear();
             List<Double> cProTmp = new ArrayList<>(cPro);
-            int s = 0;//概率不为0的元素的个数
+            int s = 0;//概率不为1或0的元素的个数
             for(int i = 0; i < cPro.size(); i++){
                 if(cPro.get(i) == 1.0) {
                     testSet.add(i);
@@ -355,12 +322,7 @@ public class DDUtil {
                     testSet.add(sel);
                 }
             }
-            getProDependency(testSet, dPro,  retSet);
-            //todo 如果代码死循环了停止应该是这里
-            //如果找了100次都没有找到非全集，就不加上可能的依赖了
-//            if(loop < 100) {
-//                getProDependencyWithEpsilon(testSet, dPro, retSet);
-//            }
+            getProDependencyWithEpsilon(testSet, dPro,  retSet);
         }
         return testSet;
     }

@@ -50,7 +50,7 @@ public class ProDDPlusM implements DeltaDebugging {
                 break;
             }
             List<Integer> testSet = getTestSet(retSet, delSet);
-            //使用增益公式带上一些可能的依赖，感觉这里很容易带上所有的元素
+            //使用增益公式带上一些可能的依赖
             getProTestSet(testSet, dPro, retSet, cPro);
             delSet = getTestSet(retSet, testSet);
 
@@ -104,17 +104,19 @@ public class ProDDPlusM implements DeltaDebugging {
                 }
             } else {
                 //CE: d_pro++
-                double tmplog = 1;
+                double tmplog = 0.0;
                 for (int i = 0; i < testSet.size(); i++) {
                     for (int j = 0; j < delSet.size(); j++) {
-                        //有没可能等于1
                         if ((dPro[testSet.get(i)][delSet.get(j)] != 0)) {
-                            tmplog *= (1.0 - dPro[testSet.get(i)][delSet.get(j)]);
+//                            tmplog *= (1.0 - dPro[testSet.get(i)][delSet.get(j)]);
+                            //采用取对数的方式，将连乘转化为连加，以避免数值下溢
+                            tmplog += Math.log(1.0 - dPro[testSet.get(i)][delSet.get(j)]);
                         }
                     }
                 }
-                //放大，概率变为10^n/10
-                tmplog = Math.pow(10.0, tmplog) / 10.0;
+                tmplog = Math.pow(Math.E, tmplog);
+//                //放大，概率变为10^n/10
+//                tmplog = Math.pow(10.0, tmplog) / 10.0;
                 for (int i = 0; i < testSet.size(); i++) {
                     for (int j = 0; j < delSet.size(); j++) {
                         if ((dPro[testSet.get(i)][delSet.get(j)] != 0)) {
@@ -132,9 +134,9 @@ public class ProDDPlusM implements DeltaDebugging {
                 }
             }
             System.out.println("cPro: " + cPro);
-//            for(int i = 0; i < dPro.length; i++){
-//                System.out.println(Arrays.deepToString(dPro[i]));
-//            }
+            for(int i = 0; i < dPro.length; i++){
+                System.out.println(Arrays.deepToString(dPro[i]));
+            }
         }
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = loop;
