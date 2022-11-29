@@ -41,7 +41,7 @@ public class ProDD implements DeltaDebugging {
             }
             List<Integer> testSet = getTestSet(retSet, delSet);
             status result = testRunner.getResult(testSet,ddInput);
-            //System.out.println(loop + ": test: " + testSet + " : " + result );
+            System.out.println(loop + ": test: " + testSet + " : " + result );
             if (result == status.PASS) {
                 //PASS: cPro=0 dPro=0
                 for (int set0 = 0; set0 < cPro.size(); set0++) {

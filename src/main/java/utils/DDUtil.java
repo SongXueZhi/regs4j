@@ -317,13 +317,17 @@ public class DDUtil {
                 return testSet;
             }
 
-            int selectNum = RandomUtils.nextInt(1, s);
+            int selectNum = RandomUtils.nextInt(0, s);
             for(int sel: select(cProTmp,selectNum)){
                 if(!testSet.contains(sel)){
                     testSet.add(sel);
                 }
             }
-            getProDependencyWithEpsilon(testSet, dPro,  retSet);
+            if(loop < 100){
+                getProDependencyWithEpsilon(testSet, dPro, retSet);
+            } else {
+                int i = 1;
+            }
         }
         return testSet;
     }

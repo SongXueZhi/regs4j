@@ -120,7 +120,7 @@ public class ProDDPlusM implements DeltaDebugging {
                 }
                 tmplog = Math.pow(Math.E, tmplog);
 //                //放大，概率变为10^n/10
-//                tmplog = Math.pow(10.0, tmplog) / 10.0;
+                tmplog = Math.pow(10.0, tmplog) / 10.0;
                 for (int i = 0; i < testSet.size(); i++) {
                     for (int j = 0; j < delSet.size(); j++) {
                         if ((dPro[testSet.get(i)][delSet.get(j)] != 0)) {
@@ -137,10 +137,10 @@ public class ProDDPlusM implements DeltaDebugging {
                     }
                 }
             }
-            System.out.println("cPro: " + cPro);
-            for(int i = 0; i < dPro.length; i++){
-                System.out.println(Arrays.deepToString(dPro[i]));
-            }
+//            System.out.println("cPro: " + cPro);
+//            for(int i = 0; i < dPro.length; i++){
+//                System.out.println(Arrays.deepToString(dPro[i]));
+//            }
         }
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = loop;
