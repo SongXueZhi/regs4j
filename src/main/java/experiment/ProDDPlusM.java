@@ -27,7 +27,6 @@ public class ProDDPlusM implements DeltaDebugging {
 
     @Override
     public DDOutputWithLoop run() {
-        List<List<Integer>> CESet = new ArrayList<>();
         List<Integer> retSet = new ArrayList<>(ddInput.fullSet);
         List<Double> cPro = new ArrayList<>();
         Double[][] dPro = new Double[ddInput.fullSet.size()][ddInput.fullSet.size()];
@@ -45,6 +44,7 @@ public class ProDDPlusM implements DeltaDebugging {
 
         //while (!testDone(cPro) && loop < pow(ddInput.fullSet.size(), 2)){
         while (!testDone(cPro)){
+                loop++;
             List<Integer> delSet = sample(cPro);
             if (delSet.size() == 0) {
                 break;
@@ -52,11 +52,8 @@ public class ProDDPlusM implements DeltaDebugging {
             List<Integer> testSet = getTestSet(retSet, delSet);
             //使用增益公式带上一些可能的依赖
             getProTestSet(testSet, dPro, retSet, cPro);
-            if(isCESet(CESet, testSet)){
-                continue;
-            }
-            loop++;
             delSet = getTestSet(retSet, testSet);
+
             status result = testRunner.getResult(testSet,ddInput);
             System.out.println(loop + ": test: " + testSet + " : " + result );
             if (result == status.PASS) {
@@ -106,7 +103,6 @@ public class ProDDPlusM implements DeltaDebugging {
                     }
                 }
             } else {
-                CESet.add(testSet);
                 //CE: d_pro++
                 double tmplog = 0.0;
                 for (int i = 0; i < testSet.size(); i++) {

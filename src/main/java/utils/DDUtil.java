@@ -1,6 +1,5 @@
 package utils;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.commons.lang3.RandomUtils;
@@ -356,15 +355,5 @@ public class DDUtil {
             }
         }
         return dependency;
-    }
-
-    //当前的testSet是否是CESet
-    public static boolean isCESet(List<List<Integer>> CESet, List<Integer> testSet){
-        for(List<Integer> set: CESet){
-            if(set.size() == testSet.size() && CollectionUtils.subtract(set, testSet).size() == 0){
-                return true;
-            }
-        }
-        return false;
     }
 }
