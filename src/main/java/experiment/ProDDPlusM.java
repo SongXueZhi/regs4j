@@ -137,6 +137,19 @@ public class ProDDPlusM implements DeltaDebugging {
 //            for(int i = 0; i < dPro.length; i++){
 //                System.out.println(Arrays.deepToString(dPro[i]));
 //            }
+            System.out.print("cPro: ");
+            for(int i = 0; i < cPro.size(); i++){
+                if(cPro.get(i) != 0.0)
+                System.out.print(i + ":" +cPro.get(i)  + ", ");
+            }
+            System.out.println("\ndPro: ");
+            for(int i = 0; i < dPro.length; i++){
+                for(int j = 0; j < dPro[i].length; j++){
+                    if(dPro[i][j] != 0.0){
+                        System.out.println("[" + i + "," + j + "]: " + dPro[i][j]);
+                    }
+                }
+            }
         }
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = loop;
