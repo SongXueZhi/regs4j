@@ -12,14 +12,27 @@ public class DDUtil {
 
     public static boolean testDone(List<Double> cPro) {
         for (double prob : cPro) {
-            //abs(prob-1.0)>1e-6相当于(prob-1)!=0
-            //也即是返回p!=1
-            //只要有p!=1，就继续运行
             if (abs(prob - 1.0) > 1e-6 && min(prob, 1) < 1.0) {
                 return false;
             }
         }
         return true;
+    }
+
+    public static boolean testDone(Double[][] dPro) {
+        boolean allZero = true;
+        for (Double[] p : dPro) {
+            for (double prob: p) {
+                if(prob != 0.0){
+                    //没有依赖关系时，应等到cPro结束
+                    allZero = false;
+                }
+                if (prob != 0.0 && prob != 1.0) {
+                    return false;
+                }
+            }
+        }
+        return !allZero;
     }
 
     public static List<Integer> sample(List<Double> prob) {
@@ -269,7 +282,7 @@ public class DDUtil {
                     maxDependency = doubles[add];
                 }
             }
-            double epsilon = rate * (1 - maxDependency);
+            double epsilon = rate * (1 - maxDependency) + 0.1;
             if(epsilon == 0.0){
                 continue;
             }
@@ -280,16 +293,16 @@ public class DDUtil {
         }
         testSet.addAll(addProDependency);
 
-        //加上addProDependency确定的依赖（dPro为1的元素）？
-        for(Integer addPro: addProDependency){
-            Set<Integer> dependency = new HashSet<>();
-            getDependency(dependency, dPro, addPro);
-            for (Integer d: dependency){
-                if(!testSet.contains(d)){
-                    testSet.add(d);
-                }
-            }
-        }
+//        //加上addProDependency确定的依赖（dPro为1的元素）？
+//        for(Integer addPro: addProDependency){
+//            Set<Integer> dependency = new HashSet<>();
+//            getDependency(dependency, dPro, addPro);
+//            for (Integer d: dependency){
+//                if(!testSet.contains(d)){
+//                    testSet.add(d);
+//                }
+//            }
+//        }
         return testSet;
     }
 
@@ -322,11 +335,7 @@ public class DDUtil {
                     testSet.add(sel);
                 }
             }
-            if(loop < 100){
-                getProDependencyWithEpsilon(testSet, dPro, retSet);
-            } else {
-                int i = 1;
-            }
+            getProDependencyWithEpsilon(testSet, dPro, retSet);
         }
         return testSet;
     }

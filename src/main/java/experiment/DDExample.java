@@ -7,6 +7,8 @@ import utils.DDUtil;
 import utils.FuzzUtil;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +24,7 @@ public class DDExample {
 //        FileOutputStream puts = new FileOutputStream(path,true);
 //        PrintStream out = new PrintStream(puts);
 //        System.setOut(out);
-        fuzzProbDDPlusM();
+        fuzz();
 
     }
     public static Map<String, DDOutput> fuzzAll(){
@@ -100,10 +102,13 @@ public class DDExample {
     public static void fuzz() {
         int ProDDPlusMOutCount = 0;
         int ProDDPlusMOutSum = 0;
+        double ProDDPlusMOutError = 0;
         int ProDDOutCount = 0;
         int ProDDOutSum = 0;
+        double ProDDOutError = 0;
         int ddminOutCount = 0;
         int ddminOutSum = 0;
+        double ddminOutError = 0;
         for (int i = 0; i < 100; i++) {
 
             DDContext ddContext = new DDContext();
@@ -133,6 +138,10 @@ public class DDExample {
             ProDDOutSum += ProDDOut.loop;
             ddminOutSum += ddminOut.loop;
 
+            ProDDPlusMOutError += (double)ProDDPlusMOut.resultIndexList.size() / cc.size();
+            ProDDOutError += (double)ProDDOut.resultIndexList.size() / cc.size();
+            ddminOutError += (double)ddminOut.resultIndexList.size() / cc.size();
+
             if (cc.size() == ProDDPlusMOut.resultIndexList.size()) {
                 ProDDPlusMOutCount++;
             }
@@ -147,17 +156,22 @@ public class DDExample {
             System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
             System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
             System.out.println("cc " + cc.size() + " " + cc);
-            System.out.println("ProDDPlusMOut " + ProDDPlusMOut.resultIndexList.size() + " " + ProDDPlusMOut.resultIndexList);
-            System.out.println("ProDDOut " + ProDDOut.resultIndexList.size() + " " + ProDDOut.resultIndexList);
-            System.out.println("ddminOut " + ddminOut.resultIndexList.size() + " " + ddminOut.resultIndexList);
+            System.out.println("ProDDPlusMOut " + ProDDPlusMOut.resultIndexList.size() + " " + ProDDPlusMOutError + " " + ProDDPlusMOut.resultIndexList);
+            System.out.println("ProDDOut " + ProDDOut.resultIndexList.size() + " " + ProDDOutError +  " " + ProDDOut.resultIndexList);
+            System.out.println("ddminOut " + ddminOut.resultIndexList.size() +  " " + ddminOutError + " " + ddminOut.resultIndexList);
 
         }
         System.out.println("\nddminOutCount: " + ddminOutCount);
         System.out.println("ddminOutSum: " + ddminOutSum);
+        System.out.println("ddminOutError: " + ddminOutError);
+
         System.out.println("\nproDDOutCount: " + ProDDOutCount);
         System.out.println("proDDOutSum: " + ProDDOutSum);
+        System.out.println("proDDOutError: " + ProDDOutError);
+
         System.out.println("\nproDDPlusMOutCount: " + ProDDPlusMOutCount);
         System.out.println("proDDPlusMOutSum: " + ProDDPlusMOutSum);
+        System.out.println("proDDPlusMOutError: " + ProDDPlusMOutError);
 
 
     }
@@ -230,7 +244,7 @@ public class DDExample {
     }
 
     public static void fuzzProbDDPlusM() {
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 100; i++) {
             DDContext ddContext = new DDContext();
             FuzzInput fuzzInput = FuzzUtil.createFuzzInput();
             List<Integer> cc = new ArrayList<Integer>(fuzzInput.criticalChanges);
@@ -258,7 +272,7 @@ public class DDExample {
             System.out.println("ProDDPlusMOut " + ProDDPlusMOut.resultIndexList.size() + " " + ProDDPlusMOut.resultIndexList);
             System.out.println("ProDDPlusMOut loop: " + ProDDPlusMOut.loop );
 
-            if (fuzzInput.criticalChanges.size() != ProDDPlusMOut.resultIndexList.size()) {
+            if (cc.size() != ProDDPlusMOut.resultIndexList.size()) {
                 break;
             }
 

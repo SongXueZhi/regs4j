@@ -1,15 +1,15 @@
 package experiment;
 
 import experiment.internal.DDInput;
-import experiment.internal.DDOutput;
 import experiment.internal.DeltaDebugging;
 import experiment.internal.TestRunner;
 import experiment.internal.TestRunner.status;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomUtils;
 
 import java.util.*;
 
 import static java.lang.Math.min;
-import static java.lang.Math.pow;
 import static utils.DDUtil.*;
 
 
@@ -27,6 +27,7 @@ public class ProDDPlusM implements DeltaDebugging {
 
     @Override
     public DDOutputWithLoop run() {
+        List<Integer> CE = new ArrayList<>();
         List<Integer> retSet = new ArrayList<>(ddInput.fullSet);
         List<Double> cPro = new ArrayList<>();
         Double[][] dPro = new Double[ddInput.fullSet.size()][ddInput.fullSet.size()];
@@ -42,20 +43,27 @@ public class ProDDPlusM implements DeltaDebugging {
 
         int loop = 0;
 
-        //while (!testDone(cPro) && loop < pow(ddInput.fullSet.size(), 2)){
         while (!testDone(cPro)){
-                loop++;
+
+            loop++;
             List<Integer> delSet = sample(cPro);
             if (delSet.size() == 0) {
                 break;
             }
+
             List<Integer> testSet = getTestSet(retSet, delSet);
             //使用增益公式带上一些可能的依赖
             getProTestSet(testSet, dPro, retSet, cPro);
+            //testSet和CE完全一样，随机选择元素
+            if(CE.size() != 0 && CollectionUtils.isEqualCollection(testSet, CE)){
+                int num = RandomUtils.nextInt(1, retSet.size());
+                testSet = select(cPro, num);
+            }
             delSet = getTestSet(retSet, testSet);
 
             status result = testRunner.getResult(testSet,ddInput);
             System.out.println(loop + ": test: " + testSet + " : " + result );
+            CE.clear();
             if (result == status.PASS) {
                 //PASS: cPro=0 dPro=0
                 for (int set0 = 0; set0 < cPro.size(); set0++) {
@@ -81,16 +89,15 @@ public class ProDDPlusM implements DeltaDebugging {
                             cPro.set(setd, 1.0);
                         }
                         //如果一个dPro为1，即确定了依赖关系，也将其cPro设为1
-                        if(cPro.get(setd) == 1.0){
-                            //获取所有确定的依赖关系
-                            Set<Integer> tmpDependency = new HashSet<>();
-                            getDependency(tmpDependency, dPro, setd);
-                            List<Integer> dependency = new ArrayList<>(tmpDependency);
-//                            List<Integer> dependency = new ArrayList<>(getDependency(tmpDependency, dPro, setd));
-                            for(int j = 0; j < dependency.size(); j++){
-                                cPro.set(dependency.get(j), 1.0);
-                            }
-                        }
+//                        if(cPro.get(setd) == 1.0){
+//                            //获取所有确定的依赖关系
+//                            Set<Integer> tmpDependency = new HashSet<>();
+//                            getDependency(tmpDependency, dPro, setd);
+//                            List<Integer> dependency = new ArrayList<>(tmpDependency);
+//                            for(int j = 0; j < dependency.size(); j++){
+//                                cPro.set(dependency.get(j), 1.0);
+//                            }
+//                        }
                     }
                 }
                 for (int setd = 0; setd < cPro.size(); setd++) {
@@ -103,6 +110,7 @@ public class ProDDPlusM implements DeltaDebugging {
                     }
                 }
             } else {
+                CE.addAll(testSet);
                 //CE: d_pro++
                 double tmplog = 0.0;
                 for (int i = 0; i < testSet.size(); i++) {
@@ -115,20 +123,20 @@ public class ProDDPlusM implements DeltaDebugging {
                     }
                 }
                 tmplog = Math.pow(Math.E, tmplog);
-//                //放大，概率变为10^n/10
+                //放大，概率变为10^n/10
                 tmplog = Math.pow(10.0, tmplog) / 10.0;
                 for (int i = 0; i < testSet.size(); i++) {
                     for (int j = 0; j < delSet.size(); j++) {
                         if ((dPro[testSet.get(i)][delSet.get(j)] != 0)) {
                             dPro[testSet.get(i)][delSet.get(j)] = min(dPro[testSet.get(i)][delSet.get(j)] / (1.0 - tmplog), 1.0);
-                            //todo 因为有不能停下的情况和精度问题，暂时将大于0.99的情况视为1
+                            // 因为有不能停下的情况和精度问题，暂时将大于0.99的情况视为1
                             if(dPro[testSet.get(i)][delSet.get(j)] >= 0.99){
                                 dPro[testSet.get(i)][delSet.get(j)] = 1.0;
                             }
                             //确定了一个依赖，依赖的元素如果cPro已经为1，那么被依赖的元素概率设为1
-                            if(dPro[testSet.get(i)][delSet.get(j)] == 1.0 && cPro.get(testSet.get(i)) == 1.0){
-                                cPro.set(delSet.get(j), 1.0);
-                            }
+//                            if(dPro[testSet.get(i)][delSet.get(j)] == 1.0 && cPro.get(testSet.get(i)) == 1.0){
+//                                cPro.set(delSet.get(j), 1.0);
+//                            }
                         }
                     }
                 }
@@ -137,16 +145,32 @@ public class ProDDPlusM implements DeltaDebugging {
 //            for(int i = 0; i < dPro.length; i++){
 //                System.out.println(Arrays.deepToString(dPro[i]));
 //            }
-            System.out.print("cPro: ");
-            for(int i = 0; i < cPro.size(); i++){
-                if(cPro.get(i) != 0.0)
-                System.out.print(i + ":" +cPro.get(i)  + ", ");
-            }
-            System.out.println("\ndPro: ");
-            for(int i = 0; i < dPro.length; i++){
-                for(int j = 0; j < dPro[i].length; j++){
-                    if(dPro[i][j] != 0.0){
-                        System.out.println("[" + i + "," + j + "]: " + dPro[i][j]);
+
+            //优雅输出
+//            System.out.print("cPro: ");
+//            for(int i = 0; i < cPro.size(); i++){
+//                if(cPro.get(i) != 0.0)
+//                System.out.print(i + ":" +cPro.get(i)  + ", ");
+//            }
+//            System.out.println("\ndPro: ");
+//            for(int i = 0; i < dPro.length; i++){
+//                for(int j = 0; j < dPro[i].length; j++){
+//                    if(dPro[i][j] != 0.0){
+//                        System.out.println("[" + i + "," + j + "]: " + dPro[i][j]);
+//                    }
+//                }
+//            }
+            //当dPro学习结束后再传递依赖
+            if(testDone(dPro)){
+                for (int setd = 0; setd < cPro.size(); setd++) {
+                    if (cPro.get(setd) == 1.0) {
+                        //获取所有确定的依赖关系
+                        Set<Integer> tmpDependency = new HashSet<>();
+                        getDependency(tmpDependency, dPro, setd);
+                        List<Integer> dependency = new ArrayList<>(tmpDependency);
+                        for (int j = 0; j < dependency.size(); j++) {
+                            cPro.set(dependency.get(j), 1.0);
+                        }
                     }
                 }
             }
