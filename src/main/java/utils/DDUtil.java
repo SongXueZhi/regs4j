@@ -143,6 +143,16 @@ public class DDUtil {
         return total;
     }
 
+    public static double arrayToSum(Double[][] pro){
+        double total = 0;
+        for (Double[] p : pro) {
+            for(double i : p) {
+                total += i;
+            }
+        }
+        return total;
+    }
+
     public static List<Integer> select(List<Double> prob, int selectNum) {
         List<Integer> selectSet = new ArrayList<>(selectNum);
         double total = listToSum(prob);
@@ -271,7 +281,7 @@ public class DDUtil {
         if(addProDependency.size() == 0){
             return testSet;
         }
-        //dependency元素失活的概率 = |𝒅𝒆𝒑𝒆𝒏𝒅𝒆𝒏𝒄𝒚|/|𝒓𝒆𝒕𝑺𝒆𝒕| * (𝟏−𝒎𝒂𝒙(元素被依赖的概率))
+        //dependency元素失活的概率 = |𝒅𝒆𝒑𝒆𝒏𝒅𝒆𝒏𝒄𝒚|/|𝒓𝒆𝒕𝑺𝒆𝒕| * (𝟏−𝒎𝒂𝒙(元素被依赖的概率)) + 0.1
         double rate = (float)addProDependency.size() / (float)retSet.size();
         List<Integer> tmpAddProDependency = new ArrayList<>(addProDependency);
         for (Integer add : tmpAddProDependency){

@@ -109,8 +109,8 @@ public class DDExample {
         int ddminOutCount = 0;
         int ddminOutSum = 0;
         double ddminOutError = 0;
-        for (int i = 0; i < 100; i++) {
 
+        for (int i = 0; i < 100; i++) {
             DDContext ddContext = new DDContext();
             FuzzInput fuzzInput = FuzzUtil.createFuzzInput();
             List<Integer> cc = new ArrayList<Integer>(fuzzInput.criticalChanges);
@@ -172,8 +172,6 @@ public class DDExample {
         System.out.println("\nproDDPlusMOutCount: " + ProDDPlusMOutCount);
         System.out.println("proDDPlusMOutSum: " + ProDDPlusMOutSum);
         System.out.println("proDDPlusMOutError: " + ProDDPlusMOutError);
-
-
     }
 
     public static void fuzzddmin() {

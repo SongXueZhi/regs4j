@@ -31,6 +31,10 @@ public class ProDDPlusM implements DeltaDebugging {
         List<Integer> retSet = new ArrayList<>(ddInput.fullSet);
         List<Double> cPro = new ArrayList<>();
         Double[][] dPro = new Double[ddInput.fullSet.size()][ddInput.fullSet.size()];
+        double cProSum = 0.0;
+        double dProSum = 0.0;
+        double lastcProSum = 0.0;
+        double lastdProSum = 0.0;
         for (int i = 0; i < ddInput.fullSet.size(); i++) {
             cPro.add(cSigma);
             for(int j = 0; j < ddInput.fullSet.size(); j++){
@@ -42,8 +46,10 @@ public class ProDDPlusM implements DeltaDebugging {
         }
 
         int loop = 0;
-
+        int stayPro = 0;
         while (!testDone(cPro)){
+            lastcProSum = cProSum;
+            lastdProSum = dProSum;
 
             loop++;
             List<Integer> delSet = sample(cPro);
@@ -160,8 +166,19 @@ public class ProDDPlusM implements DeltaDebugging {
 //                    }
 //                }
 //            }
-            //当dPro学习结束后再传递依赖
-            if(testDone(dPro)){
+
+            cProSum = listToSum(cPro);
+            dProSum = arrayToSum(dPro);
+
+            //判断结果和上一次是否相同
+            if(cProSum == lastcProSum && dProSum == lastdProSum){
+                stayPro++;
+            } else {
+                stayPro = 0;
+            }
+
+            //当dPro学习结束且cPro&dPro的值10次不改变，再传递依赖
+            if(testDone(dPro) && stayPro > 10){
                 for (int setd = 0; setd < cPro.size(); setd++) {
                     if (cPro.get(setd) == 1.0) {
                         //获取所有确定的依赖关系
@@ -175,6 +192,7 @@ public class ProDDPlusM implements DeltaDebugging {
                 }
             }
         }
+
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = loop;
         return ddOutputWithLoop;
