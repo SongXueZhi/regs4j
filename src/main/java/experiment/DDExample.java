@@ -112,7 +112,9 @@ public class DDExample {
 
         for (int i = 0; i < 100; i++) {
             DDContext ddContext = new DDContext();
-            FuzzInput fuzzInput = FuzzUtil.createFuzzInput();
+            // true: 所有的关系均有0.8的概率被加入到dependencies；
+            // false: 所有的关系均有0.8的概率被加入到dependencies，另外随机添加relatedMap*0.2个错误的dependencies;
+            FuzzInput fuzzInput = FuzzUtil.createFuzzInputWithDependencies(50,100,10,5,false);
             List<Integer> cc = new ArrayList<Integer>(fuzzInput.criticalChanges);
             DDUtil.getTestSetWithDependency(cc, fuzzInput.relatedMap);
 
@@ -121,6 +123,7 @@ public class DDExample {
             System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
             System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
             System.out.println("cc " + cc.size() + " " + cc);
+            System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
 
             TestRunner testRunner = new TestRunner4Fuzz();
 
@@ -156,9 +159,10 @@ public class DDExample {
             System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
             System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
             System.out.println("cc " + cc.size() + " " + cc);
-            System.out.println("ProDDPlusMOut " + ProDDPlusMOut.resultIndexList.size() + " " + ProDDPlusMOutError + " " + ProDDPlusMOut.resultIndexList);
-            System.out.println("ProDDOut " + ProDDOut.resultIndexList.size() + " " + ProDDOutError +  " " + ProDDOut.resultIndexList);
-            System.out.println("ddminOut " + ddminOut.resultIndexList.size() +  " " + ddminOutError + " " + ddminOut.resultIndexList);
+            System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
+            System.out.println("ProDDPlusMOut " + ProDDPlusMOut.resultIndexList.size()  + " " + ProDDPlusMOut.resultIndexList);
+            System.out.println("ProDDOut " + ProDDOut.resultIndexList.size() + " " + ProDDOut.resultIndexList);
+            System.out.println("ddminOut " + ddminOut.resultIndexList.size() + " " + ddminOut.resultIndexList);
 
         }
         System.out.println("\nddminOutCount: " + ddminOutCount);

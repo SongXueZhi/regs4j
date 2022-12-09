@@ -17,10 +17,10 @@ public class ProDDPlusM implements DeltaDebugging {
     final static double cSigma = 0.1;
     final static double dSigma = 0.1;
     final static double dRate = 0.1;
-    DDInput ddInput;
+    FuzzInput ddInput;
     TestRunner testRunner;
 
-    public ProDDPlusM(DDInput ddInput, TestRunner testRunner) {
+    public ProDDPlusM(FuzzInput ddInput, TestRunner testRunner) {
         this.ddInput = ddInput;
         this.testRunner = testRunner;
     }
@@ -41,6 +41,9 @@ public class ProDDPlusM implements DeltaDebugging {
                 dPro[i][j] = dSigma;
                 if(i == j){
                     dPro[i][j] = 0.0;
+                }
+                if(ddInput.dependencies.containsMapping(i,j)){
+                    dPro[i][j] = 1.0;
                 }
             }
         }
