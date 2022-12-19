@@ -1,7 +1,6 @@
 package experiment;
 
 import experiment.internal.DDInput;
-import experiment.internal.DDOutput;
 import experiment.internal.DeltaDebugging;
 import experiment.internal.TestRunner;
 import experiment.internal.TestRunner.status;
@@ -9,15 +8,12 @@ import org.apache.commons.lang3.RandomUtils;
 
 import java.util.*;
 
-import static java.lang.Math.*;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static utils.DDUtil.*;
 
-/**
- * @Author: sxz
- * @Date: 2022/10/21/16:55
- * @Description:
- */
-public class ProDDPlus implements DeltaDebugging {
+
+public class ProDDPlus_nlogn implements DeltaDebugging {
     final static double cSigma = 0.1;
     final static double dSigma = 0.1;
     final static double dRate = 0.1;
@@ -25,7 +21,7 @@ public class ProDDPlus implements DeltaDebugging {
     TestRunner testRunner;
     Map<List<Integer>, status> record = new HashMap<>();
 
-    public ProDDPlus(DDInput ddInput, TestRunner testRunner) {
+    public ProDDPlus_nlogn(DDInput ddInput, TestRunner testRunner) {
         this.ddInput = ddInput;
         this.testRunner = testRunner;
     }
@@ -39,22 +35,13 @@ public class ProDDPlus implements DeltaDebugging {
             cPro.add(cSigma);
             dPro.add(dSigma);
         }
-        double cProSum = 0.0;
-        double dProSum = 0.0;
-        double lastcProSum = 0.0;
-        double lastdProSum = 0.0;
 
         int loop = 0;
-        int stayPro = 0;
         List<Integer> delSet = sample(cPro);
         List<Integer> testSet = getTestSet(retSet, delSet);
         status result = status.PASS;
-        while (!testDone(cPro)){
-            lastcProSum = cProSum;
-            lastdProSum = dProSum;
-//            if(!result.equals(status.PASS) && inRecord(testSet)){
-//                continue;
-//            }
+        while (!testDone(cPro) && loop < ddInput.fullSet.size() * Math.log(ddInput.fullSet.size())){
+
             loop++;
             result = testRunner.getResult(testSet,ddInput);
             record.put(testSet, result);
@@ -102,7 +89,6 @@ public class ProDDPlus implements DeltaDebugging {
                         dPro.set(setd, dProTmp.get(setd) + dDelta);
                     }
                 }
-                //int selectSetSize = retSet.size() - sample(cPro).size();
                 int selectSetSize = RandomUtils.nextInt(1, retSet.size());
                 List<Double> avgPro = getAvgPro(cPro, dPro);
                 testSet = select(avgPro, selectSetSize);
@@ -114,25 +100,6 @@ public class ProDDPlus implements DeltaDebugging {
             if (delSet.size() == 0) {
                 break;
             }
-
-            cProSum = listToSum(cPro);
-            dProSum = listToSum(dPro);
-
-            //判断结果和上一次是否相同
-            if(cProSum == lastcProSum){
-                stayPro++;
-            } else {
-                stayPro = 0;
-            }
-            //当cPro&dPro的值10次不改变，结束
-            if(stayPro > 10 ){
-                System.out.println("keep 10 break");
-                break;
-            }
-//            else if(loop > pow(ddInput.fullSet.size(), 2)){
-//                System.out.println("n^2 break");
-//                break;
-//            }
         }
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = loop;

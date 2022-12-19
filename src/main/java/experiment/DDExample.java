@@ -103,6 +103,12 @@ public class DDExample {
         int ProDDPlusMOutCount = 0;
         int ProDDPlusMOutSum = 0;
         double ProDDPlusMOutError = 0;
+        int ProDDPlusnnOutCount = 0;
+        int ProDDPlusnnOutSum = 0;
+        double ProDDPlusnnOutError = 0;
+        int ProDDPlusnlognOutCount = 0;
+        int ProDDPlusnlognOutSum = 0;
+        double ProDDPlusnlognOutError = 0;
         int ProDDOutCount = 0;
         int ProDDOutSum = 0;
         double ProDDOutError = 0;
@@ -112,9 +118,10 @@ public class DDExample {
 
         for (int i = 0; i < 100; i++) {
             DDContext ddContext = new DDContext();
-            // true: 所有的关系均有0.8的概率被加入到dependencies；
-            // false: 所有的关系均有0.8的概率被加入到dependencies，另外随机添加relatedMap*0.2个错误的dependencies;
-            FuzzInput fuzzInput = FuzzUtil.createFuzzInputWithDependencies(50,100,10,5,false);
+            int setSize = RandomUtils.nextInt(100, 200);
+            int relatedNum = RandomUtils.nextInt(10, (setSize / 2) + 1);
+            int criticalNum = RandomUtils.nextInt(3, 20);
+            FuzzInput fuzzInput = FuzzUtil.createFuzzInput(setSize, relatedNum, 10);
             List<Integer> cc = new ArrayList<Integer>(fuzzInput.criticalChanges);
             DDUtil.getTestSetWithDependency(cc, fuzzInput.relatedMap);
 
@@ -123,46 +130,65 @@ public class DDExample {
             System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
             System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
             System.out.println("cc " + cc.size() + " " + cc);
-            System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
+            //System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
 
             TestRunner testRunner = new TestRunner4Fuzz();
 
             Map<String, DDOutput> ddOutputHashMap = ddContext.addDDStrategy(
-                            new ProDDPlusM(fuzzInput, testRunner),
+                            new ProDDPlus(fuzzInput, testRunner),
                             new ProDD(fuzzInput, testRunner),
-                            new ddmin(fuzzInput, testRunner)
+                            new ddmin(fuzzInput, testRunner),
+                            new ProDDPlus_nn(fuzzInput, testRunner),
+                            new ProDDPlus_nlogn(fuzzInput, testRunner)
                             )
                     .start();
-            DDOutputWithLoop ProDDPlusMOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlusM.class.getName());
-            DDOutputWithLoop ProDDOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDD.class.getName());
-            DDOutputWithLoop ddminOut = (DDOutputWithLoop) ddOutputHashMap.get(ddmin.class.getName());
 
+            DDOutputWithLoop ProDDPlusMOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus.class.getName());
             ProDDPlusMOutSum += ProDDPlusMOut.loop;
-            ProDDOutSum += ProDDOut.loop;
-            ddminOutSum += ddminOut.loop;
-
             ProDDPlusMOutError += (double)ProDDPlusMOut.resultIndexList.size() / cc.size();
-            ProDDOutError += (double)ProDDOut.resultIndexList.size() / cc.size();
-            ddminOutError += (double)ddminOut.resultIndexList.size() / cc.size();
-
             if (cc.size() == ProDDPlusMOut.resultIndexList.size()) {
                 ProDDPlusMOutCount++;
             }
+
+            DDOutputWithLoop ProDDPlusnnOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus_nn.class.getName());
+            ProDDPlusnnOutSum += ProDDPlusnnOut.loop;
+            ProDDPlusnnOutError += (double)ProDDPlusnnOut.resultIndexList.size() / cc.size();
+            if (cc.size() == ProDDPlusnnOut.resultIndexList.size()) {
+                ProDDPlusnnOutCount++;
+            }
+
+            DDOutputWithLoop ProDDPlusnlognOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus_nlogn.class.getName());
+            ProDDPlusnlognOutSum += ProDDPlusnlognOut.loop;
+            ProDDPlusnlognOutError += (double)ProDDPlusnlognOut.resultIndexList.size() / cc.size();
+            if (cc.size() == ProDDPlusnlognOut.resultIndexList.size()) {
+                ProDDPlusnlognOutCount++;
+            }
+
+            DDOutputWithLoop ProDDOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDD.class.getName());
+            ProDDOutSum += ProDDOut.loop;
+            ProDDOutError += (double)ProDDOut.resultIndexList.size() / cc.size();
             if (cc.size() == ProDDOut.resultIndexList.size()) {
                 ProDDOutCount++;
             }
+
+            DDOutputWithLoop ddminOut = (DDOutputWithLoop) ddOutputHashMap.get(ddmin.class.getName());
+            ddminOutSum += ddminOut.loop;
+            ddminOutError += (double)ddminOut.resultIndexList.size() / cc.size();
             if (cc.size() == ddminOut.resultIndexList.size()) {
                 ddminOutCount++;
             }
+
             System.out.println("\n" + i + " dd input:");
             System.out.println("fullSet " + fuzzInput.fullSet.size() + " " + fuzzInput.fullSet);
             System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
             System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
             System.out.println("cc " + cc.size() + " " + cc);
-            System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
-            System.out.println("ProDDPlusMOut " + ProDDPlusMOut.resultIndexList.size()  + " " + ProDDPlusMOut.resultIndexList);
-            System.out.println("ProDDOut " + ProDDOut.resultIndexList.size() + " " + ProDDOut.resultIndexList);
+            //System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
             System.out.println("ddminOut " + ddminOut.resultIndexList.size() + " " + ddminOut.resultIndexList);
+            System.out.println("ProDDOut " + ProDDOut.resultIndexList.size() + " " + ProDDOut.resultIndexList);
+            System.out.println("ProDDPlusOut " + ProDDPlusMOut.resultIndexList.size()  + " " + ProDDPlusMOut.resultIndexList);
+            System.out.println("ProDDPlusnnOut " + ProDDPlusnnOut.resultIndexList.size()  + " " + ProDDPlusnnOut.resultIndexList);
+            System.out.println("ProDDPlusnlognOut " + ProDDPlusnlognOut.resultIndexList.size()  + " " + ProDDPlusnlognOut.resultIndexList);
 
         }
         System.out.println("\nddminOutCount: " + ddminOutCount);
@@ -173,9 +199,17 @@ public class DDExample {
         System.out.println("proDDOutSum: " + ProDDOutSum);
         System.out.println("proDDOutError: " + ProDDOutError);
 
-        System.out.println("\nproDDPlusMOutCount: " + ProDDPlusMOutCount);
-        System.out.println("proDDPlusMOutSum: " + ProDDPlusMOutSum);
-        System.out.println("proDDPlusMOutError: " + ProDDPlusMOutError);
+        System.out.println("\nproDDPlusOutCount: " + ProDDPlusMOutCount);
+        System.out.println("proDDPlusOutSum: " + ProDDPlusMOutSum);
+        System.out.println("proDDPlusOutError: " + ProDDPlusMOutError);
+
+        System.out.println("\nproDDPlusnnOutCount: " + ProDDPlusnnOutCount);
+        System.out.println("proDDPlusnnOutSum: " + ProDDPlusnnOutSum);
+        System.out.println("proDDPlusnnOutError: " + ProDDPlusnnOutError);
+
+        System.out.println("\nproDDPlusnlognOutCount: " + ProDDPlusnlognOutCount);
+        System.out.println("proDDPlusnlognOutSum: " + ProDDPlusnlognOutSum);
+        System.out.println("proDDPlusnlognOutError: " + ProDDPlusnlognOutError);
     }
 
     public static void fuzzddmin() {
@@ -245,10 +279,17 @@ public class DDExample {
         }
     }
 
-    public static void fuzzProbDDPlusM() {
+    public static void fuzzProbDDPlus() {
+        int ProDDPlusOutCount = 0;
+        int ProDDPlusOutSum = 0;
+        double ProDDPlusOutError = 0;
+
         for (int i = 0; i < 100; i++) {
             DDContext ddContext = new DDContext();
-            FuzzInput fuzzInput = FuzzUtil.createFuzzInput();
+            int setSize = RandomUtils.nextInt(2, 50);
+            int relatedNum = RandomUtils.nextInt(0, (setSize / 2) + 1);
+            int criticalNum = RandomUtils.nextInt(3, 20);
+            FuzzInput fuzzInput = FuzzUtil.createFuzzInput(setSize, relatedNum, 2);
             List<Integer> cc = new ArrayList<Integer>(fuzzInput.criticalChanges);
             DDUtil.getTestSetWithDependency(cc, fuzzInput.relatedMap);
 
@@ -257,6 +298,50 @@ public class DDExample {
             System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
             System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
             System.out.println("cc " + cc.size() + " " + cc);
+
+            TestRunner testRunner = new TestRunner4Fuzz();
+
+            Map<String, DDOutput> ddOutputHashMap = ddContext.addDDStrategy(
+                            new ProDDPlus(fuzzInput, testRunner)
+                    )
+                    .start();
+            DDOutputWithLoop ProDDPlusOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus.class.getName());
+
+            System.out.println("\n" + i + " dd input:");
+            System.out.println("fullSet " + fuzzInput.fullSet.size() + " " + fuzzInput.fullSet);
+            System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
+            System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
+            System.out.println("cc " + cc.size() + " " + cc);
+            System.out.println("ProDDPlusMOut " + ProDDPlusOut.resultIndexList.size() + " " + ProDDPlusOut.resultIndexList);
+            System.out.println("ProDDPlusMOut loop: " + ProDDPlusOut.loop );
+            System.out.println("proDDPlusOutError: " + (double)ProDDPlusOut.resultIndexList.size() / cc.size());
+
+
+            ProDDPlusOutSum += ProDDPlusOut.loop;
+            ProDDPlusOutError += (double)ProDDPlusOut.resultIndexList.size() / cc.size();
+            if (cc.size() == ProDDPlusOut.resultIndexList.size()) {
+                ProDDPlusOutCount++;
+            }
+        }
+        System.out.println("\nProDDPlusOutCount: " + ProDDPlusOutCount);
+        System.out.println("proDDPlusOutSum: " + ProDDPlusOutSum);
+        System.out.println("proDDPlusOutError: " + ProDDPlusOutError);
+    }
+
+    public static void fuzzProbDDPlusM() {
+        for (int i = 0; i < 1; i++) {
+            DDContext ddContext = new DDContext();
+            //FuzzInput fuzzInput = FuzzUtil.createFuzzInput(5,2,2);
+            FuzzInput fuzzInput = FuzzUtil.createFuzzInputWithDependencies(7,7,3,2,false);
+            List<Integer> cc = new ArrayList<Integer>(fuzzInput.criticalChanges);
+            DDUtil.getTestSetWithDependency(cc, fuzzInput.relatedMap);
+
+            System.out.println("\n" + i + " dd input:");
+            System.out.println("fullSet " + fuzzInput.fullSet.size() + " " + fuzzInput.fullSet);
+            System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
+            System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
+            System.out.println("cc " + cc.size() + " " + cc);
+            System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
 
             TestRunner testRunner = new TestRunner4Fuzz();
 
@@ -271,6 +356,7 @@ public class DDExample {
             System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
             System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
             System.out.println("cc " + cc.size() + " " + cc);
+            System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
             System.out.println("ProDDPlusMOut " + ProDDPlusMOut.resultIndexList.size() + " " + ProDDPlusMOut.resultIndexList);
             System.out.println("ProDDPlusMOut loop: " + ProDDPlusMOut.loop );
 

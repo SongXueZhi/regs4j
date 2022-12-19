@@ -150,10 +150,10 @@ public class ProDDPlusM implements DeltaDebugging {
                     }
                 }
             }
-//            System.out.println("cPro: " + cPro);
-//            for(int i = 0; i < dPro.length; i++){
-//                System.out.println(Arrays.deepToString(dPro[i]));
-//            }
+            System.out.println("cPro: " + cPro);
+            for(int i = 0; i < dPro.length; i++){
+                System.out.println(Arrays.deepToString(dPro[i]));
+            }
 
             //优雅输出
 //            System.out.print("cPro: ");

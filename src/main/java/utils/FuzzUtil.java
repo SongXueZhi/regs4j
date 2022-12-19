@@ -88,7 +88,7 @@ public class FuzzUtil {
         }
 
         if(!correctDependency){
-            for (int i = 1; i < max(1, relatedMap.size()*0.2); i++) {
+            for (int i = 0; i < max(1, relatedMap.size()*0.2); i++) {
                 int parentIndex = RandomUtils.nextInt(0, setSize);
                 int childIndex = RandomUtils.nextInt(0, setSize);
                 while (dependencies.containsMapping(parentIndex, childIndex) || dependencies.containsMapping(childIndex,

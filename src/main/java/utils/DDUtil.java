@@ -113,7 +113,7 @@ public class DDUtil {
         double res = 0.0;
         double tmplog = 0.0;
         for(int delc: deleteconfig){
-            if((p.get(delc) != 0)){
+            if((p.get(delc) != 0) && (p.get(delc) != 1)){
                 //tmplog *= (1.0 - p.get(delc));
                 tmplog += Math.log(1.0 - p.get(delc));
             }
@@ -339,7 +339,7 @@ public class DDUtil {
                 return testSet;
             }
 
-            int selectNum = RandomUtils.nextInt(0, s);
+            int selectNum = RandomUtils.nextInt(1, s);
             for(int sel: select(cProTmp,selectNum)){
                 if(!testSet.contains(sel)){
                     testSet.add(sel);
@@ -375,4 +375,6 @@ public class DDUtil {
         }
         return dependency;
     }
+
+
 }
