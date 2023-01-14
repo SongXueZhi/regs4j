@@ -124,7 +124,7 @@ public class ProDDPlus implements DeltaDebugging {
             } else {
                 stayPro = 0;
             }
-            //当cPro&dPro的值10次不改变，结束
+            //当cPro的值10次不改变，结束
             if(stayPro > 10 ){
                 System.out.println("keep 10 break");
                 break;

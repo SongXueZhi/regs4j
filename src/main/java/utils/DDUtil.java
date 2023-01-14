@@ -317,7 +317,7 @@ public class DDUtil {
     }
 
     //判断是否选择了全集，否则重新选
-    //轮盘赌重新选择后是否需要带上所有可能的依赖 ——是
+    //轮盘赌重新选择后是否需要带上所有可能的依赖 ——否
     public static List<Integer> getProTestSet(List<Integer> testSet, Double[][] dPro, List<Integer> retSet, List<Double> cPro){
         //getProDependency(testSet, dPro,  retSet);
         getProDependencyWithEpsilon(testSet, dPro, retSet);
@@ -345,7 +345,7 @@ public class DDUtil {
                     testSet.add(sel);
                 }
             }
-            getProDependencyWithEpsilon(testSet, dPro, retSet);
+            //getProDependencyWithEpsilon(testSet, dPro, retSet);
         }
         return testSet;
     }
