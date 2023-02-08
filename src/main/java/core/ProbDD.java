@@ -5,18 +5,17 @@ import example.Revert;
 import model.HunkEntity;
 import model.Regression;
 import model.Revision;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import run.Executor;
 import utils.DDUtil;
 import utils.FileUtilx;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static java.lang.Math.*;
 import static utils.DDUtil.*;
-import static utils.DDUtil.testDone;
 import static utils.FileUtilx.readListFromFile;
 import static utils.FileUtilx.readSetFromFile;
 
@@ -30,7 +29,7 @@ public class ProbDD {
     static BufferedWriter bw;
     static {
         try {
-            bw = new BufferedWriter(new FileWriter("detail0207", true));
+            bw = new BufferedWriter(new FileWriter("detail" + new SimpleDateFormat("_yyyyMMddHHmmss").format(new Date()), true));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -59,7 +58,7 @@ public class ProbDD {
         for (int i = 0; i < regressionList.size(); i++) {
             Regression regressionTest = regressionList.get(i);
             String regressionId =  regressionTest.getId();
-            String path = regressionId + "_detail" ;
+            String path = regressionId +  new SimpleDateFormat("_yyyyMMddHHmmss").format(new Date());
             FileOutputStream puts = new FileOutputStream(path,true);
             PrintStream out = new PrintStream(puts);
             System.setOut(out);
@@ -103,8 +102,8 @@ public class ProbDD {
             bw.append("\n" + hunks + "\n");
 
             record.clear();
-            List<HunkEntity> ccHunks1 = ddmin(ric.getLocalCodeDir().toString(),hunks);
-            List<HunkEntity> ccHunks2 = ProbDD(ric.getLocalCodeDir().toString(),hunks);
+            //List<HunkEntity> ccHunks1 = ddmin(ric.getLocalCodeDir().toString(),hunks);
+            //List<HunkEntity> ccHunks2 = ProbDD(ric.getLocalCodeDir().toString(),hunks);
             List<HunkEntity> ccHunks3 = ProbDDplus(ric.getLocalCodeDir().toString(),hunks);
             List<HunkEntity> ccHunks4 = ProbDDplusM(ric.getLocalCodeDir().toString(),hunks);
             //cc.put(regressionId,new HashMap<>(){{put("ddmin", ccHunks1.size());}});
@@ -272,6 +271,7 @@ public class ProbDD {
                 seq2test.add(hunkEntities.get(idxelm));
             }
             String result = null;
+            Collections.sort(idx2test);
             if(record.containsKey(idx2test)){
                 result = record.get(idx2test);
             }else {
@@ -331,10 +331,25 @@ public class ProbDD {
             }
             bw.append("\ncPro: " + cPro);
             bw.append("\ndPro: " + dPro);
+
+            int test = 0;
+            Collections.sort(idx2test);
+            while (record.containsKey(idx2test) && record.get(idx2test).equals("CE")){
+                test++;
+                int selectSetSize = RandomUtils.nextInt(1, retIdx.size());
+                List<Double> avgPro = getAvgPro(cPro, dPro);
+                idx2test = select(avgPro, selectSetSize);
+                Collections.sort(idx2test);
+                //todo 如何确认不再尝试条件
+                if(test > 1000){
+                    idx2test = retIdx;
+                    break;
+                }
+            }
+            delIdx = getIdx2test(retIdx, idx2test);
             if (delIdx.size() == 0) {
                 break;
             }
-
         }
         System.out.println("循环次数: " + loop);
         bw.append("\n循环次数: " + loop);
@@ -385,18 +400,35 @@ public class ProbDD {
             //使用增益公式带上一些可能的依赖
             getProTestSet(idx2test, dPro, retIdx, cPro);
             //testSet和CE完全一样，随机选择元素
-            if(CollectionUtils.isEqualCollection(idx2test, CE)){
-                int num = RandomUtils.nextInt(1, retIdx.size());
-                idx2test = select(cPro, num);
+//            if(CollectionUtils.isEqualCollection(idx2test, CE)){
+//                int num = RandomUtils.nextInt(1, retIdx.size());
+//                idx2test = select(cPro, num);
+//            }
+            int test = 0;
+            Collections.sort(idx2test);
+            while (record.containsKey(idx2test) && record.get(idx2test).equals("CE")){
+                test++;
+                int selectSetSize = RandomUtils.nextInt(1, retIdx.size());
+                idx2test = select(cPro, selectSetSize);
+                Collections.sort(idx2test);
+                //todo 如何确认不再尝试条件
+                if(test > 1000){
+                    idx2test = retIdx;
+                    break;
+                }
+            }
+            delIdx = getIdx2test(retIdx, idx2test);
+            if (delIdx.size() == 0) {
+                break;
             }
             List<HunkEntity> seq2test = new ArrayList<>();
             for (int idxelm: idx2test){
                 seq2test.add(hunkEntities.get(idxelm));
             }
-            delIdx = getIdx2test(retIdx, idx2test);
 
             loop++;
             String result = null;
+            Collections.sort(idx2test);
             if(record.containsKey(idx2test)){
                 result = record.get(idx2test);
             }else {
