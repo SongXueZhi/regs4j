@@ -30,7 +30,7 @@ public class ProbDD {
     static BufferedWriter bw;
     static {
         try {
-            bw = new BufferedWriter(new FileWriter("detail", true));
+            bw = new BufferedWriter(new FileWriter("detail0207", true));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -38,6 +38,7 @@ public class ProbDD {
 
     static Map<String,Map<String,Integer>> cc = new HashMap<>();
     Map<String,Map<String,Integer>> loop = new HashMap<>();
+    static Map<List<Integer>, String> record = new HashMap<>();
 
     public static void main(String [] args) throws Exception {
 
@@ -101,6 +102,7 @@ public class ProbDD {
             bw.append("\n原hunk的数量是: " + hunks.size());
             bw.append("\n" + hunks + "\n");
 
+            record.clear();
             List<HunkEntity> ccHunks1 = ddmin(ric.getLocalCodeDir().toString(),hunks);
             List<HunkEntity> ccHunks2 = ProbDD(ric.getLocalCodeDir().toString(),hunks);
             List<HunkEntity> ccHunks3 = ProbDDplus(ric.getLocalCodeDir().toString(),hunks);
@@ -138,12 +140,19 @@ public class ProbDD {
                         complement.add(hunkEntities.get(i));
                     }
                 }
-                FileUtilx.copyDirToTarget(path,tmpPath + time);
                 List<Integer> index = new ArrayList<>();
                 for (HunkEntity com: complement) {
                     index.add(hunkMap.get(com));
                 }
-                String result = codeReduceTest(tmpPath + time,complement);
+
+                String result = null;
+                if(record.containsKey(index)){
+                    result = record.get(index);
+                }else {
+                    FileUtilx.copyDirToTarget(path,tmpPath);
+                    result = codeReduceTest(tmpPath, complement);
+                    record.put(index, result);
+                }
                 bw.append( "\n" + time + " " + result + ": revert: " + index);
                 bw.append("\n" + complement);
                 System.out.println(time + " " + result + ": revert: " + index);
@@ -196,9 +205,15 @@ public class ProbDD {
             for (int idxelm: idx2test){
                 seq2test.add(hunkEntities.get(idxelm));
             }
-            FileUtilx.copyDirToTarget(path,tmpPath + time);
 //            copyRelatedFile(path,tmpPath,relatedFile);
-            String result = codeReduceTest(tmpPath + time,seq2test);
+            String result = null;
+            if(record.containsKey(idx2test)){
+                result = record.get(idx2test);
+            }else {
+                FileUtilx.copyDirToTarget(path,tmpPath);
+                result = codeReduceTest(tmpPath, seq2test);
+                record.put(idx2test, result);
+            }
             bw.append( "\n" + time + " " + result + ": revert: " + idx2test);
             bw.append("\n" + seq2test);
             System.out.println(time + " " + result + ": revert: " + idx2test);
@@ -256,8 +271,14 @@ public class ProbDD {
             for (int idxelm: idx2test){
                 seq2test.add(hunkEntities.get(idxelm));
             }
-            FileUtilx.copyDirToTarget(path,tmpPath);
-            String result = codeReduceTest(tmpPath, seq2test);
+            String result = null;
+            if(record.containsKey(idx2test)){
+                result = record.get(idx2test);
+            }else {
+                FileUtilx.copyDirToTarget(path,tmpPath);
+                result = codeReduceTest(tmpPath, seq2test);
+                record.put(idx2test,result);
+            }
             bw.append( "\n" + loop + " " + result + ": revert: " + idx2test);
             bw.append("\n" + seq2test);
             System.out.println(loop + " " + result + ": revert: " + idx2test);
@@ -374,9 +395,15 @@ public class ProbDD {
             }
             delIdx = getIdx2test(retIdx, idx2test);
 
-            FileUtilx.copyDirToTarget(path,tmpPath);
             loop++;
-            String result = codeReduceTest(tmpPath, seq2test);
+            String result = null;
+            if(record.containsKey(idx2test)){
+                result = record.get(idx2test);
+            }else {
+                FileUtilx.copyDirToTarget(path,tmpPath);
+                result = codeReduceTest(tmpPath, seq2test);
+                record.put(idx2test,result);
+            }
             bw.append( "\n" + loop + " " + result + ": revert: " + idx2test);
             bw.append("\n" + seq2test);
             System.out.println(loop + " " + result + ": revert: " + idx2test);
