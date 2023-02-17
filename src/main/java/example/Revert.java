@@ -119,7 +119,10 @@ public class Revert {
             String fileFullNewPath = tmpPath + File.separator + tmpHunk.getOldPath();
             FileUtilx.copyFileToTarget(fileFullOldPath,fileFullNewPath);
         }
-        List<String> line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getNewPath());
+        List<String> line = new ArrayList<>();
+        if(!Objects.equals(tmpHunk.getNewPath(), File.separator + "dev" + File.separator + "null")){
+            line = FileUtilx.readListFromFile(tmpPath + File.separator + tmpHunk.getNewPath());
+        }
         hunkEntities.sort(new Comparator<HunkEntity>() {
             @Override
             public int compare(HunkEntity p1, HunkEntity p2) {

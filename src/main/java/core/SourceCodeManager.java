@@ -52,7 +52,7 @@ public class SourceCodeManager {
             return projectFile;
         } else {
             try {
-                GitUtils.clone(projectFile, "https://github.com/" + projectFullName + ".git");
+                GitUtils.clone(projectFile, "https://github.com/" + projectFullName.replace("_", "/") + ".git");
                 return projectFile;
             } catch (Exception exception) {
                 System.out.println(exception.getMessage());
@@ -166,6 +166,9 @@ public class SourceCodeManager {
         if (!buildFile.exists()) {
             try {
                 buildFile.createNewFile();
+                buildFile.canRead();
+                buildFile.canExecute();
+                buildFile.canWrite();
                 String s1 = "#!/bin/bash";
                 String s2 = "mvn clean compile test-compile &> /dev/null";
                 FileUtils.write(buildFile, s1 + "\n" + s2, "UTF-8");

@@ -18,6 +18,7 @@
 
 package core;
 
+import model.DDOutput;
 import model.HunkEntity;
 import model.Regression;
 import model.Revision;
@@ -171,6 +172,29 @@ public class MysqlManager {
         return regressionList;
     }
 
+    public static List<Regression> selectCleanRegressions(String sql) {
+        List<Regression> regressionList = new ArrayList<>();
+        try {
+            getStatement();
+            ResultSet rs = statement.executeQuery(sql);
+            while (rs.next()) {
+                Regression regression = new Regression();
+                regression.setProjectFullName(rs.getString("project_name"));
+                regression.setId(String.valueOf(rs.getInt("id")));
+                regression.setRfc(new Revision(rs.getString("bfc"), "rfc"));
+                regression.setRic(new Revision(rs.getString("bic"), "ric"));
+                regression.setWork(new Revision(rs.getString("wc"), "work"));
+                regression.setTestCase(rs.getString("testcase1").split(";")[0]);
+                regressionList.add(regression);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            closed();
+        }
+        return regressionList;
+    }
+
     public static void insertCC(String revision_name, String regression_uuid, String tool, List<HunkEntity> hunks) throws Exception {
         if (conn == null) {
             getConn();
@@ -192,6 +216,71 @@ public class MysqlManager {
                 pstmt.setString(9, hunk.getType().toString());
                 pstmt.setString(10, tool);
                 pstmt.executeUpdate();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (pstmt!=null){
+                pstmt.close();
+            }
+        }
+    }
+
+    public static void insertResult(int regressionId, DDOutput ddOutput, String tool) throws Exception {
+        if (conn == null) {
+            getConn();
+        }
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = conn.prepareStatement("insert ignore into dd_result(regression_id,tool,cc_size,loop_time,run_time,hunk_size) values(?,?,?,?,?,?)");
+            pstmt.setInt(1, regressionId);
+            pstmt.setString(2, tool);
+            pstmt.setInt(3, ddOutput.getCc().size());
+            pstmt.setInt(4, ddOutput.getLoop());
+            pstmt.setLong(5, ddOutput.getTime());
+            pstmt.setInt(6, ddOutput.getHunk());
+            pstmt.executeUpdate();
+
+            List<HunkEntity> hunks = ddOutput.getCc();
+            for(HunkEntity hunk: hunks) {
+                int hunkId = 0;
+                //todo 判断这条hunk是否存在
+                String sql = "select id from hunks where new_path='" + hunk.getNewPath() +
+                        "' and old_path='" + hunk.getOldPath() +
+                        "' and beginA='" + hunk.getBeginA() +
+                        "' and beginB='" + hunk.getBeginB() +
+                        "' and endA='" + hunk.getEndA() +
+                        "' and endB='" + hunk.getEndB() +
+                        "' and type='" + hunk.getType().toString() +
+                        "' limit 1";
+                getStatement();
+                ResultSet selectResult = statement.executeQuery(sql);
+                if(selectResult.next()){
+                    hunkId = selectResult.getInt("id");
+                }
+                else {
+                    pstmt = conn.prepareStatement("insert into hunks(new_path, old_path, " +
+                            "beginA, beginB, endA, endB, type) values(?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                    pstmt.setString(1, hunk.getNewPath());
+                    pstmt.setString(2, hunk.getOldPath());
+                    pstmt.setInt(3, hunk.getBeginA());
+                    pstmt.setInt(4, hunk.getBeginB());
+                    pstmt.setInt(5, hunk.getEndA());
+                    pstmt.setInt(6, hunk.getEndB());
+                    pstmt.setString(7, hunk.getType().toString());
+                    pstmt.executeUpdate();
+                    ResultSet rs = pstmt.getGeneratedKeys();
+                    if (rs.next()) {
+                        hunkId = rs.getInt(1);
+                    }
+                }
+
+                pstmt = conn.prepareStatement("insert ignore into critical_change(regression_id,tool,hunk_id) values(?,?,?)");
+                pstmt.setInt(1, regressionId);
+                pstmt.setString(2, tool);
+                pstmt.setInt(3, hunkId);
+                pstmt.executeUpdate();
+
             }
         } catch (Exception e) {
             e.printStackTrace();
