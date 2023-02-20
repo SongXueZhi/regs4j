@@ -125,8 +125,13 @@ public class ProbDD {
         FileUtilx.copyDirToTarget(path,tmpPath);
         assert Objects.equals(codeReduceTest(tmpPath, hunkEntities), "PASS");
         int n = 2;
+        boolean isTimeout = false;
 
-        while(hunkEntities.size() >= 2){
+        while(hunkEntities.size() >= 2 ){
+            if((System.currentTimeMillis() - start) / 1000 > 14400){
+                isTimeout = true;
+                break;
+            }
             int location = 0;
             int subset_length = hunkEntities.size() / n;
             boolean some_complement_is_failing = false;
@@ -134,7 +139,6 @@ public class ProbDD {
                 time = time + 1;
                 List<HunkEntity> complement = new ArrayList<>();
                 for(int i = 0; i < hunkEntities.size();i++ ){
-                    //0 1 2 3 4 5
                     if(i < location || i >= location + subset_length) {
                         complement.add(hunkEntities.get(i));
                     }
@@ -165,6 +169,11 @@ public class ProbDD {
             }
         }
         long end = System.currentTimeMillis();
+        if(isTimeout){
+            bw.append("\n运行超时");
+            System.out.println("运行超时");
+            return new DDOutput(hunkSize, time, (end - start) / 1000, new ArrayList<HunkEntity>());
+        }
         System.out.printf("Total Time：%d ms%n", end - start);
         System.out.println("循环次数: " + time);
         System.out.println("得到hunk数量：" + hunkEntities.size() + ":" +hunkEntities);
@@ -191,7 +200,12 @@ public class ProbDD {
             retIdx.add(i);
             p.add(0.1);
         }
-        while (!testDone(p)){
+        boolean isTimeout = false;
+        while (!testDone(p) ){
+            if((System.currentTimeMillis() - start) / 1000 > 14400){
+                isTimeout = true;
+                break;
+            }
             List<Integer> delIdx = sample(p);
             if(delIdx.size() == 0){
                 break;
@@ -228,7 +242,13 @@ public class ProbDD {
             }
             bw.append("\np: " + p);
         }
+
         long end = System.currentTimeMillis();
+        if(isTimeout){
+            bw.append("\n运行超时");
+            System.out.println("运行超时");
+            return new DDOutput(hunkSize, time, (end - start) / 1000, new ArrayList<HunkEntity>());
+        }
         System.out.printf("Total Time：%d ms%n", end - start);
         bw.append(String.format("%nTotal Time：%d ms", end - start));
         System.out.println("循环次数: " + time);

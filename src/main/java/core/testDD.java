@@ -48,8 +48,8 @@ public class testDD {
             sourceCodeManager.createShell(regression.getId(), projectName, work, regression.getTestCase());
 
             List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
-            hunks.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
-            hunks.removeIf(hunkEntity -> hunkEntity.getOldPath().contains("test"));
+            hunks.removeIf(hunkEntity -> !hunkEntity.getNewPath().contains(".java") && !hunkEntity.getOldPath().contains(".java"));
+            hunks.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test") || hunkEntity.getOldPath().contains("test"));
             System.out.println("原hunk的数量是: " + hunks.size() + ":" + hunks);
 
             DDOutput ddminOutput= ProbDD.ddmin(ric.getLocalCodeDir().toString(),hunks);
