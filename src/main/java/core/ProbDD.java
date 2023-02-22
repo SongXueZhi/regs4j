@@ -136,6 +136,10 @@ public class ProbDD {
             int subset_length = hunkEntities.size() / n;
             boolean some_complement_is_failing = false;
             while (location < hunkEntities.size()){
+                if((System.currentTimeMillis() - start) / 1000 > 14400){
+                    isTimeout = true;
+                    break;
+                }
                 time = time + 1;
                 List<HunkEntity> complement = new ArrayList<>();
                 for(int i = 0; i < hunkEntities.size();i++ ){
