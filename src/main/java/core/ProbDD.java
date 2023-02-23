@@ -6,6 +6,7 @@ import model.DDOutput;
 import model.HunkEntity;
 import model.Regression;
 import model.Revision;
+import org.apache.commons.io.FileUtils;
 import run.Executor;
 import utils.FileUtilx;
 
@@ -154,7 +155,7 @@ public class ProbDD {
                 FileUtilx.copyDirToTarget(path,tmpPath);
                 String result = codeReduceTest(tmpPath, complement);
                 bw.append( "\n" + time + " " + result + ": revert: " + index);
-                bw.append("\n" + complement);
+                //bw.append("\n" + complement);
                 System.out.println(time + " " + result + ": revert: " + index);
 
                 if (Objects.equals(result, "PASS")){
@@ -184,6 +185,7 @@ public class ProbDD {
         bw.append(String.format("\nTotal Time：%d ms", end - start));
         bw.append("\n循环次数: " + time);
         bw.append("\n得到hunk数量：" + hunkEntities.size() + ":" + hunkEntities + "\n");
+        FileUtils.deleteDirectory(new File(tmpPath));
         return new DDOutput(hunkSize, time, (end - start) / 1000, hunkEntities);
     }
 
@@ -225,7 +227,7 @@ public class ProbDD {
 
             String result = codeReduceTest(tmpPath, seq2test);;
             bw.append( "\n" + time + " " + result + ": revert: " + idx2test);
-            bw.append("\n" + seq2test);
+            //bw.append("\n" + seq2test);
             System.out.println(time + " " + result + ": revert: " + idx2test);
             if(Objects.equals(result, "PASS")){
                 for(int set0 = 0; set0 < p.size(); set0++){
@@ -259,6 +261,7 @@ public class ProbDD {
         bw.append("\n循环次数: " + time);
         System.out.println("得到hunk数量：" + retseq.size() + ":" +retseq);
         bw.append("\n得到hunk数量：" + retseq.size() + ":" + retseq + "\n");
+        FileUtils.deleteDirectory(new File(tmpPath));
         return new DDOutput(hunkSize, time, (end - start) / 1000, retseq);
     }
 
