@@ -47,6 +47,22 @@ public class GitUtils {
             return false;
         }
     }
+    public static String getBuggyIDByBfc1(String commitID, File codeDir) {
+        String result ="";
+        try (Repository repository = RepositoryProvider.getRepoFromLocal(codeDir); Git git = new Git(repository)) {
+            if (commitID.contains("~1")){
+                try (RevWalk revWalk = new RevWalk(repository);) {
+                    RevCommit commit = revWalk.parseCommit(repository.resolve(commitID));
+                    result = commit.getName();
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return result;
+        }
+
+    }
 
     public static List<DiffEntry> getDiffEntriesBetweenCommits(File codeDir, String newID, String oldID) {
         try (Repository repository = RepositoryProvider.getRepoFromLocal(codeDir); Git git = new Git(repository)) {

@@ -18,10 +18,7 @@
 
 package core;
 
-import model.DDOutput;
-import model.HunkEntity;
-import model.Regression;
-import model.Revision;
+import model.*;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -99,6 +96,28 @@ public class MysqlManager {
         } finally {
             closed();
         }
+    }
+
+    public static List<RegressionDO> selectRegressionDO(String sql) {
+        List<RegressionDO> regressionList = new ArrayList<>();
+        try {
+            getStatement();
+            ResultSet rs = statement.executeQuery(sql);
+            while (rs.next()) {
+                RegressionDO regression = new RegressionDO();
+                regression.setRfc(rs.getString("bfc"));
+                regression.setRic(rs.getString("bic"));
+                regression.setWork(rs.getString("wc"));
+                regression.setTestCase(rs.getString("testcase1"));
+                regression.setProjectFullName(rs.getString("project_name"));
+                regressionList.add(regression);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            closed();
+        }
+        return regressionList;
     }
 
     public static List<Regression> selectRegressions(String sql) {
