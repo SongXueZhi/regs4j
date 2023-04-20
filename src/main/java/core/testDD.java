@@ -21,7 +21,7 @@ public class testDD {
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
 
     public static void main(String [] args) throws Exception {
-        String sql = "select * from regressions_all where is_clean=1 and is_dirty=0 and id not in (select regression_id from dd_result)";
+        String sql = "select * from regressions_all where is_clean=1 and is_dirty=0";
         List<Regression> regressionList = MysqlManager.selectCleanRegressions(sql);
         for (int i = 0; i < regressionList.size(); i++) {
             try{
@@ -49,22 +49,37 @@ public class testDD {
                 sourceCodeManager.createShell(regression.getId(), projectName, ric, regression.getTestCase());
                 sourceCodeManager.createShell(regression.getId(), projectName, work, regression.getTestCase());
 
-                List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
-//            hunks.removeIf(hunkEntity -> !hunkEntity.getNewPath().contains(".java") && !hunkEntity.getOldPath().contains(".java"));
-                hunks.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test") || hunkEntity.getOldPath().contains("test"));
-                ProbDD.bw.append("\n" + regressionId);
-                System.out.println("\n" + regressionId);
-                ProbDD.bw.append("原hunk的数量是: " + hunks.size() + ":" + hunks);
-                System.out.println("原hunk的数量是: " + hunks.size() + ":" + hunks);
-
-                DDOutput ddminOutput= ProbDD.ddmin(ric.getLocalCodeDir().toString(),hunks);
-                MysqlManager.insertResult(Integer.parseInt(regressionId), ddminOutput, "ddmin");
-                DDOutput proddOutput = ProbDD.ProbDD(ric.getLocalCodeDir().toString(),hunks);
-                MysqlManager.insertResult(Integer.parseInt(regressionId), proddOutput, "prodd");
-
-                FileUtils.deleteDirectory(rfcDir);
-                FileUtils.deleteDirectory(ricDir);
-                FileUtils.deleteDirectory(workDir);
+//                List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
+////            hunks.removeIf(hunkEntity -> !hunkEntity.getNewPath().contains(".java") && !hunkEntity.getOldPath().contains(".java"));
+//                hunks.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test") || hunkEntity.getOldPath().contains("test"));
+//                ProbDD.bw.append("\n" + regressionId);
+//                System.out.println("\n" + regressionId);
+//                ProbDD.bw.append("原hunk的数量是: " + hunks.size() + ":" + hunks);
+//                System.out.println("原hunk的数量是: " + hunks.size() + ":" + hunks);
+//
+//                DDOutput ddminOutput= ProbDD.ddmin(ric.getLocalCodeDir().toString(),hunks);
+//                MysqlManager.insertResult(Integer.parseInt(regressionId), ddminOutput, "ddmin");
+//                DDOutput proddOutput = ProbDD.ProbDD(ric.getLocalCodeDir().toString(),hunks);
+//                MysqlManager.insertResult(Integer.parseInt(regressionId), proddOutput, "prodd");
+//
+//                FileUtils.deleteDirectory(rfcDir);
+//                FileUtils.deleteDirectory(ricDir);
+//                FileUtils.deleteDirectory(workDir);                List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
+////            hunks.removeIf(hunkEntity -> !hunkEntity.getNewPath().contains(".java") && !hunkEntity.getOldPath().contains(".java"));
+//                hunks.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test") || hunkEntity.getOldPath().contains("test"));
+//                ProbDD.bw.append("\n" + regressionId);
+//                System.out.println("\n" + regressionId);
+//                ProbDD.bw.append("原hunk的数量是: " + hunks.size() + ":" + hunks);
+//                System.out.println("原hunk的数量是: " + hunks.size() + ":" + hunks);
+//
+//                DDOutput ddminOutput= ProbDD.ddmin(ric.getLocalCodeDir().toString(),hunks);
+//                MysqlManager.insertResult(Integer.parseInt(regressionId), ddminOutput, "ddmin");
+//                DDOutput proddOutput = ProbDD.ProbDD(ric.getLocalCodeDir().toString(),hunks);
+//                MysqlManager.insertResult(Integer.parseInt(regressionId), proddOutput, "prodd");
+//
+//                FileUtils.deleteDirectory(rfcDir);
+//                FileUtils.deleteDirectory(ricDir);
+//                FileUtils.deleteDirectory(workDir);
             }
             catch (Exception e){
                 e.printStackTrace();

@@ -18,7 +18,7 @@ public class SourceCodeManager {
     public File checkout(String regressionID,Revision revision, File projectFile, String projectFullName) {
         //copy source code from meta project dir
         String projectDirName = projectFullName.replace("/", "_");
-        File projectCacheDir = new File(cacheProjectsDirPath + File.separator, projectDirName);
+        File projectCacheDir = new File(cacheProjectsDirPath);
         if (projectCacheDir.exists() && !projectCacheDir.isDirectory()) {
             projectCacheDir.delete();
         }
@@ -158,10 +158,10 @@ public class SourceCodeManager {
     public void createShell(String regressionID, String projectFullName, Revision revision, String testcase) {
         String projectDirName = projectFullName.replace("/", "_");
         File buildFile =
-                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + regressionID+"_"+revision.getName(),
+                new File(cacheProjectsDirPath  + File.separator + regressionID+"_"+revision.getName(),
                         "build.sh");
         File testFile =
-                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator +  regressionID+"_"+revision.getName(),
+                new File(cacheProjectsDirPath  + File.separator +  regressionID+"_"+revision.getName(),
                         "test.sh");
         if (!buildFile.exists()) {
             try {
@@ -170,7 +170,7 @@ public class SourceCodeManager {
                 buildFile.canExecute();
                 buildFile.canWrite();
                 String s1 = "#!/bin/bash";
-                String s2 = "mvn clean compile test-compile &> /dev/null";
+                String s2 = "mvn clean compile test-compile -Dstyle.color=never -q";
                 FileUtils.write(buildFile, s1 + "\n" + s2, "UTF-8");
             } catch (IOException e) {
                 e.printStackTrace();

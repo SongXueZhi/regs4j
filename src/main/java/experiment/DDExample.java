@@ -118,51 +118,52 @@ public class DDExample {
 
         for (int i = 0; i < 100; i++) {
             DDContext ddContext = new DDContext();
-            int setSize = RandomUtils.nextInt(100, 200);
-            int relatedNum = RandomUtils.nextInt(10, (setSize / 2) + 1);
-            int criticalNum = RandomUtils.nextInt(3, 20);
-            FuzzInput fuzzInput = FuzzUtil.createFuzzInput(setSize, relatedNum, 10);
+            int setSize = RandomUtils.nextInt(8, 8);
+            int relatedNum = RandomUtils.nextInt(1, 3);
+            int criticalNum = RandomUtils.nextInt(1, 4);
+            FuzzInput fuzzInput = FuzzUtil.createFuzzInput(setSize, relatedNum, criticalNum);
             List<Integer> cc = new ArrayList<Integer>(fuzzInput.criticalChanges);
             DDUtil.getTestSetWithDependency(cc, fuzzInput.relatedMap);
 
-            System.out.println("\n" + i + " dd input:");
-            System.out.println("fullSet " + fuzzInput.fullSet.size() + " " + fuzzInput.fullSet);
-            System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
-            System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
-            System.out.println("cc " + cc.size() + " " + cc);
+//            System.out.println("\n" + i + " dd input:");
+//            System.out.println("fullSet " + fuzzInput.fullSet.size() + " " + fuzzInput.fullSet);
+//            System.out.println("relatedMap " + fuzzInput.relatedMap.size() + " " + fuzzInput.relatedMap);
+//            System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
+//            System.out.println("cc " + cc.size() + " " + cc);
             //System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
 
             TestRunner testRunner = new TestRunner4Fuzz();
 
             Map<String, DDOutput> ddOutputHashMap = ddContext.addDDStrategy(
-                            new ProDDPlus(fuzzInput, testRunner),
-                            new ProDD(fuzzInput, testRunner),
-                            new ddmin(fuzzInput, testRunner),
-                            new ProDDPlus_nn(fuzzInput, testRunner),
-                            new ProDDPlus_nlogn(fuzzInput, testRunner)
+//                            new ProDDPlus(fuzzInput, testRunner),
+                            new ProDD(fuzzInput, testRunner)
+//                            ,
+//                            new ddmin(fuzzInput, testRunner),
+//                            new ProDDPlus_nn(fuzzInput, testRunner),
+//                            new ProDDPlus_nlogn(fuzzInput, testRunner)
                             )
                     .start();
 
-            DDOutputWithLoop ProDDPlusMOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus.class.getName());
-            ProDDPlusMOutSum += ProDDPlusMOut.loop;
-            ProDDPlusMOutError += (double)ProDDPlusMOut.resultIndexList.size() / cc.size();
-            if (cc.size() == ProDDPlusMOut.resultIndexList.size()) {
-                ProDDPlusMOutCount++;
-            }
-
-            DDOutputWithLoop ProDDPlusnnOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus_nn.class.getName());
-            ProDDPlusnnOutSum += ProDDPlusnnOut.loop;
-            ProDDPlusnnOutError += (double)ProDDPlusnnOut.resultIndexList.size() / cc.size();
-            if (cc.size() == ProDDPlusnnOut.resultIndexList.size()) {
-                ProDDPlusnnOutCount++;
-            }
-
-            DDOutputWithLoop ProDDPlusnlognOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus_nlogn.class.getName());
-            ProDDPlusnlognOutSum += ProDDPlusnlognOut.loop;
-            ProDDPlusnlognOutError += (double)ProDDPlusnlognOut.resultIndexList.size() / cc.size();
-            if (cc.size() == ProDDPlusnlognOut.resultIndexList.size()) {
-                ProDDPlusnlognOutCount++;
-            }
+//            DDOutputWithLoop ProDDPlusMOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus.class.getName());
+//            ProDDPlusMOutSum += ProDDPlusMOut.loop;
+//            ProDDPlusMOutError += (double)ProDDPlusMOut.resultIndexList.size() / cc.size();
+//            if (cc.size() == ProDDPlusMOut.resultIndexList.size()) {
+//                ProDDPlusMOutCount++;
+//            }
+//
+//            DDOutputWithLoop ProDDPlusnnOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus_nn.class.getName());
+//            ProDDPlusnnOutSum += ProDDPlusnnOut.loop;
+//            ProDDPlusnnOutError += (double)ProDDPlusnnOut.resultIndexList.size() / cc.size();
+//            if (cc.size() == ProDDPlusnnOut.resultIndexList.size()) {
+//                ProDDPlusnnOutCount++;
+//            }
+//
+//            DDOutputWithLoop ProDDPlusnlognOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDDPlus_nlogn.class.getName());
+//            ProDDPlusnlognOutSum += ProDDPlusnlognOut.loop;
+//            ProDDPlusnlognOutError += (double)ProDDPlusnlognOut.resultIndexList.size() / cc.size();
+//            if (cc.size() == ProDDPlusnlognOut.resultIndexList.size()) {
+//                ProDDPlusnlognOutCount++;
+//            }
 
             DDOutputWithLoop ProDDOut = (DDOutputWithLoop) ddOutputHashMap.get(ProDD.class.getName());
             ProDDOutSum += ProDDOut.loop;
@@ -170,13 +171,16 @@ public class DDExample {
             if (cc.size() == ProDDOut.resultIndexList.size()) {
                 ProDDOutCount++;
             }
+            if (cc.size() < ProDDOut.resultIndexList.size()-1) {
+                ProDDOutCount++;
 
-            DDOutputWithLoop ddminOut = (DDOutputWithLoop) ddOutputHashMap.get(ddmin.class.getName());
-            ddminOutSum += ddminOut.loop;
-            ddminOutError += (double)ddminOut.resultIndexList.size() / cc.size();
-            if (cc.size() == ddminOut.resultIndexList.size()) {
-                ddminOutCount++;
-            }
+
+//            DDOutputWithLoop ddminOut = (DDOutputWithLoop) ddOutputHashMap.get(ddmin.class.getName());
+//            ddminOutSum += ddminOut.loop;
+//            ddminOutError += (double)ddminOut.resultIndexList.size() / cc.size();
+//            if (cc.size() == ddminOut.resultIndexList.size()) {
+//                ddminOutCount++;
+//            }
 
             System.out.println("\n" + i + " dd input:");
             System.out.println("fullSet " + fuzzInput.fullSet.size() + " " + fuzzInput.fullSet);
@@ -184,32 +188,32 @@ public class DDExample {
             System.out.println("criticalChanges " + fuzzInput.criticalChanges.size() + " " + fuzzInput.criticalChanges);
             System.out.println("cc " + cc.size() + " " + cc);
             //System.out.println("dependencies " + fuzzInput.dependencies.size() + " " + fuzzInput.dependencies);
-            System.out.println("ddminOut " + ddminOut.resultIndexList.size() + " " + ddminOut.resultIndexList);
+//            System.out.println("ddminOut " + ddminOut.resultIndexList.size() + " " + ddminOut.resultIndexList);
             System.out.println("ProDDOut " + ProDDOut.resultIndexList.size() + " " + ProDDOut.resultIndexList);
-            System.out.println("ProDDPlusOut " + ProDDPlusMOut.resultIndexList.size()  + " " + ProDDPlusMOut.resultIndexList);
-            System.out.println("ProDDPlusnnOut " + ProDDPlusnnOut.resultIndexList.size()  + " " + ProDDPlusnnOut.resultIndexList);
-            System.out.println("ProDDPlusnlognOut " + ProDDPlusnlognOut.resultIndexList.size()  + " " + ProDDPlusnlognOut.resultIndexList);
-
+//            System.out.println("ProDDPlusOut " + ProDDPlusMOut.resultIndexList.size()  + " " + ProDDPlusMOut.resultIndexList);
+//            System.out.println("ProDDPlusnnOut " + ProDDPlusnnOut.resultIndexList.size()  + " " + ProDDPlusnnOut.resultIndexList);
+//            System.out.println("ProDDPlusnlognOut " + ProDDPlusnlognOut.resultIndexList.size()  + " " + ProDDPlusnlognOut.resultIndexList);
+            }
         }
-        System.out.println("\nddminOutCount: " + ddminOutCount);
-        System.out.println("ddminOutSum: " + ddminOutSum);
-        System.out.println("ddminOutError: " + ddminOutError);
+//        System.out.println("\nddminOutCount: " + ddminOutCount);
+//        System.out.println("ddminOutSum: " + ddminOutSum);
+//        System.out.println("ddminOutError: " + ddminOutError);
 
         System.out.println("\nproDDOutCount: " + ProDDOutCount);
         System.out.println("proDDOutSum: " + ProDDOutSum);
         System.out.println("proDDOutError: " + ProDDOutError);
 
-        System.out.println("\nproDDPlusOutCount: " + ProDDPlusMOutCount);
-        System.out.println("proDDPlusOutSum: " + ProDDPlusMOutSum);
-        System.out.println("proDDPlusOutError: " + ProDDPlusMOutError);
-
-        System.out.println("\nproDDPlusnnOutCount: " + ProDDPlusnnOutCount);
-        System.out.println("proDDPlusnnOutSum: " + ProDDPlusnnOutSum);
-        System.out.println("proDDPlusnnOutError: " + ProDDPlusnnOutError);
-
-        System.out.println("\nproDDPlusnlognOutCount: " + ProDDPlusnlognOutCount);
-        System.out.println("proDDPlusnlognOutSum: " + ProDDPlusnlognOutSum);
-        System.out.println("proDDPlusnlognOutError: " + ProDDPlusnlognOutError);
+//        System.out.println("\nproDDPlusOutCount: " + ProDDPlusMOutCount);
+//        System.out.println("proDDPlusOutSum: " + ProDDPlusMOutSum);
+//        System.out.println("proDDPlusOutError: " + ProDDPlusMOutError);
+//
+//        System.out.println("\nproDDPlusnnOutCount: " + ProDDPlusnnOutCount);
+//        System.out.println("proDDPlusnnOutSum: " + ProDDPlusnnOutSum);
+//        System.out.println("proDDPlusnnOutError: " + ProDDPlusnnOutError);
+//
+//        System.out.println("\nproDDPlusnlognOutCount: " + ProDDPlusnlognOutCount);
+//        System.out.println("proDDPlusnlognOutSum: " + ProDDPlusnlognOutSum);
+//        System.out.println("proDDPlusnlognOutError: " + ProDDPlusnlognOutError);
     }
 
     public static void fuzzddmin() {
