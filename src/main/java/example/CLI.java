@@ -4,20 +4,27 @@ import core.Migrator;
 import core.MysqlManager;
 import core.Reducer;
 import core.SourceCodeManager;
+import core.coverage.CodeCoverage;
 import core.coverage.model.CoverNode;
+import core.maven.JacocoMavenManager;
 import core.maven.MavenManager;
+import core.test.TestManager;
 import model.Methodx;
 import model.Regression;
 import model.Revision;
+import run.Executor;
 import run.Runner;
 import utils.CodeUtil;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.TimeoutException;
 
 public class CLI {
     private final static String helpText = "This tool is meant to provide a basic interface to our RegMiner tool.\n" +
@@ -43,6 +50,9 @@ public class CLI {
     private static final String reg_table_name = "regression";
 
     private static final String proj_name = "project_full_name";
+
+    //make sure modify the JDK dir based on your own computer
+    private static String JDK_CMD = "export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_351.jdk/Contents/Home;export PATH=$JAVA_HOME/bin:$PATH;";
 
     public static void main(String[] args) throws Exception {
         if (args.length > 0) {//command-line mode
@@ -85,6 +95,29 @@ public class CLI {
                         }
                     }
                 } break;
+
+                case "test": {
+                    if (args.length == 1) {
+                        System.out.println("Usage: test <testcase> (<project dir>)");
+                        System.out.println("If you want to test all testcases, type a '-' as the first parameter");
+                        return;
+                    }
+                    String testcase = (args[1].length() > 1)? args[1] : "";
+                    String codeDir = (args.length > 2)? args[2] : ".";
+                    testCmd(codeDir, testcase);
+                } break;
+
+                case "compile": {
+                    String codeDir = (args.length > 1) ? args[1] : ".";
+                    compileCmd(codeDir);
+                } break;
+
+                case "tstwithcvg": {
+                    String codeDir = (args.length > 1) ? args[1] : ".";
+                    testWithCoverageCmd(codeDir);
+                } break;
+
+
                 case "similarity": {
                     if (args.length < 3) System.out.println("requires a project name and a reg id!");
                     else {
@@ -498,4 +531,120 @@ public class CLI {
         System.out.println("Checkout " + cnt + " bugs successfully!");
     }
 
+    public static void testCmd(String codeDir, String testcase) {
+        String testCmd = "mvn test";
+        if (!testcase.equals("")) {
+            testCmd += " -Dtest=" + testcase;
+        }
+        testCmd += " -Dmaven.test.failure.ignore=true";
+        File dir = new File(codeDir);
+        if (dir.exists() && dir.isDirectory()) {
+            testCmd(dir, testCmd, true);
+        } else {
+            System.out.println("This path is not a directory!");
+        }
+    }
+
+    public static void compileCmd(String codeDir) {
+
+        File dir = new File(codeDir);
+        if (dir.exists() && dir.isDirectory()) {
+            compileCmd(dir, true);
+        } else {
+            System.out.println("This path is not a directory!");
+        }
+    }
+
+    private static void testCmd(File dir, String testCmd, boolean isVerbose) {
+        Executor executor = new Executor().setDirectory(dir);
+        List<String> errMsgs = new ArrayList<>();
+        String str = "";
+        try {
+            str = executor.exec(JDK_CMD + testCmd, 5);//in order to support jdk8
+
+            TestManager testManager = new TestManager();
+            errMsgs = testManager.getErrors(dir);
+            if (errMsgs == null) {
+                System.out.println("This is not an legal directory!");
+                return;
+            }
+            if (errMsgs.size() == 0) {
+                System.out.println("Test success");
+                return;
+            }
+
+        } catch (TimeoutException ex) {
+            errMsgs = new ArrayList<>();
+            errMsgs.add(ex.getClass().getName());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        finally {
+            if (isVerbose) {
+                System.out.println("Test result: " + str);
+            }
+            if (errMsgs != null){
+                System.out.println("----- " + errMsgs.size() + "error messages: ");
+                for (String s : errMsgs) {
+                    System.out.println(s);
+                }
+            }
+        }
+    }
+
+    private static void compileCmd(File dir, boolean isVerbose) {
+        String compileCmd = "mvn compile";
+        Executor executor = new Executor().setDirectory(dir);
+        try {
+            String str = executor.exec(JDK_CMD + compileCmd);//in order to support jdk8
+            if (isVerbose) {
+                System.out.println("Compile result: " + str);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static void testWithCoverageCmd(String codeDir) {
+        CodeCoverage codeCoverage = new CodeCoverage();
+        JacocoMavenManager jacocoMavenManager = new JacocoMavenManager();
+        File dir = new File(codeDir);
+        try {
+            jacocoMavenManager.addJacocoFeatureToMaven(dir);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        compileCmd(dir, false);
+        testCmd(dir, "mvn test" + " -Dmaven.test.failure.ignore=true", false);
+        List<CoverNode> coverNodes = codeCoverage.readJacocoReports(dir);
+        if (coverNodes == null) {
+            System.out.println("Null cover nodes!");
+            return;
+        }
+        System.out.println("CoverNodes size: " + coverNodes.size());
+        File coverageFile = new File(dir.getPath() + File.separator + "coverage.txt");
+        try {
+            boolean a = coverageFile.createNewFile();
+            if (!a) {
+                System.out.println("Create file failed! You can copy the following messages!\n");
+                for (CoverNode coverNode : coverNodes) {
+                    System.out.println(coverNode);
+                }
+                return;
+            }
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(coverageFile))) {
+                for (CoverNode coverNode : coverNodes) {
+                    writer.write(coverNode.toString());
+                    writer.newLine();
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            for (CoverNode coverNode : coverNodes) {
+                System.out.println(coverNode);
+            }
+        }
+    }
 }
