@@ -150,7 +150,7 @@ public class ProDDSxz implements DeltaDebugging {
         System.out.println("不重复的测试："+his.size());
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = his.size();
-        ddOutputWithLoop.CE =CEMap.size();
+//        ddOutputWithLoop.CE =CEMap.size();
         return ddOutputWithLoop;
     }
 

@@ -64,7 +64,7 @@ public class DDSxz {
                 lm++;
             }
             sumLoop+= ProDDPlusMOut.loop;;
-            sumCE+=ProDDPlusMOut.CE;
+//            sumCE+=ProDDPlusMOut.CE;
         }
 //        System.out.println(lm+"----->"+sumLoop+"----->"+sumCE);
 //    }

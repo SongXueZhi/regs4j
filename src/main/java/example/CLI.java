@@ -13,6 +13,7 @@ import run.Runner;
 import utils.CodeUtil;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,7 +40,115 @@ public class CLI {
     static String projectFullName = null;
     static int targetIdx = -1;
 
-    public static void main(String[] args) {
+    private static final String reg_table_name = "regression";
+
+    private static final String proj_name = "project_full_name";
+
+    public static void main(String[] args) throws Exception {
+        if (args.length > 0) {//command-line mode
+            switch (args[0]) {
+                case "help": System.out.println(helpText); break;
+                case "projects": retrieveProjects(); break;
+                case "predd":
+                    TransferBugsToDD.checkout(args[1]);
+                    break;
+                case "dd":
+                    DeltaDebugging.dd(args[1]);
+                    break;
+                case "list": {
+                    if (args.length < 2) System.out.println("requires a project name!");
+                    else {
+                        retrieveBugs(args[1]);
+                        if (regressionList == null)
+                            System.out.println("A list command can only be called after a project is specified.");
+                        else
+                            printBugs();
+                    }
+                } break;
+                case "checkout": {
+                    if (args.length < 3) System.out.println("Requires a project name and a reg id!");
+                    else {
+                        retrieveBugs(args[1]);
+                        int index = -1;
+                        try {
+                            index = Integer.parseInt(args[2]);
+                            checkout(index);
+                        } catch (NullPointerException e) {
+                            System.out.println("Please specify a project before checking out a bug.");
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid index: " + args[2]);
+                        } catch (IndexOutOfBoundsException e) {
+                            e.printStackTrace();
+                            System.out.println(String.format("Invalid index %d as there are only %d regressions " +
+                                            "for project %s.",
+                                    index, regressionList.size(), projectFullName));
+                        }
+                    }
+                } break;
+                case "similarity": {
+                    if (args.length < 3) System.out.println("requires a project name and a reg id!");
+                    else {
+                        retrieveBugs(args[1]);
+                        int index = -1;
+                        try {
+                            index = Integer.parseInt(args[2]);
+                            checkout(index);
+                        } catch (NullPointerException e) {
+                            System.out.println("Please specify a project before checking out a bug.");
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid index: " + args[2]);
+                        } catch (IndexOutOfBoundsException e) {
+                            e.printStackTrace();
+                            System.out.println(String.format("Invalid index %d as there are only %d regressions " +
+                                            "for project %s.",
+                                    index, regressionList.size(), projectFullName));
+                        }
+                        similarity();
+                    }
+                } break;
+
+
+                case "checkoutreg": checkoutBicWc(args[1], args[2], args[3]); break;
+                case "checkoutAll": {//just checkout
+                    if (args.length < 2) System.out.println("A use command requires a project name.");
+                    else {
+                        checkoutAll(args[1]);
+                    }
+
+                } break;
+                case "generate": {
+                    checkoutAllWithTestcase(args[1]);
+                    int cnt = regressionList.size();
+                    for (int i = 0; i < cnt; i++) {
+                        Regression r = regressionList.get(i);
+                        if (r.getTestCase().equals("")) {
+                            System.out.println("reg " + (i + 1) + " has no testcase, skip");
+                            continue;
+                        }
+                        RegCleaner.generateMeta(r, i + 1);
+                    }
+                } break;
+                case "parTest": {
+                    checkoutAllBicWithTestcase(args[1]);
+                    int cnt = regressionList.size();
+                    for (int i = 0; i < cnt; i++) {
+                        Regression r = regressionList.get(i);
+                        if (r.getTestCase().equals("")) {
+                            System.out.println("reg " + (i + 1) + " has no testcase, skip");
+                            continue;
+                        }
+                        if (!r.getTestCase().contains(";")) {
+                            System.out.println("reg " + (i + 1) + " has only one testcase, skip");
+                            continue;
+                        }
+                        RegCleaner.partitionTestcaseBic(r, i + 1);
+                    }
+                } break;
+                default: System.out.println("Invalid command. Type help for the list of valid commands."); break;
+            }
+            return;
+        }
+
         Scanner sc = new Scanner(System.in);
         boolean run = true;
         System.out.println("Welcome to RegMiner tool. Type help for more information on the tool.");
@@ -83,6 +192,7 @@ public class CLI {
                             } catch (NumberFormatException e) {
                                 System.out.println("Invalid index: " + inputs[1]);
                             } catch (IndexOutOfBoundsException e) {
+                                e.printStackTrace();
                                 System.out.println(String.format("Invalid index %d as there are only %d regressions " +
 												"for project %s.",
                                         index, regressionList.size(), projectFullName));
@@ -120,7 +230,8 @@ public class CLI {
 
     private static void retrieveProjects() {
         System.out.print("Retrieving projects...");
-        List<String> projects = MysqlManager.selectProjects("select distinct project_full_name from regressions");
+        List<String> projects = MysqlManager.selectProjects("select distinct " + proj_name +" from " + reg_table_name);
+//        List<String> projects = MysqlManager.selectProjects("select distinct project_full_name from regressions");
         System.out.println(" Done");
         List<String> validProjects = new ArrayList<>();
         int maxLength = 0;
@@ -145,9 +256,29 @@ public class CLI {
         CLI.projectFullName = projectFullName;
         System.out.println("Using project: " + projectFullName);
         System.out.print("Retrieving regressions...");
-        regressionList = MysqlManager.selectRegressions("select bfc,buggy,bic,work,testcase from regressions where " +
-				"project_full_name='" + projectFullName + "'");
+//        regressionList = MysqlManager.selectRegressions("select bfc,buggy,bic,work,testcase from regressions where " +
+//				"project_full_name='" + projectFullName + "'");
+        regressionList = MysqlManager.selectRegressions("select bfc,buggy,bic,work,testcase from " + reg_table_name +" where " +
+                proj_name +"='" + projectFullName + "'");
         targetIdx = -1;
+//        for (Regression r : regressionList) {
+//            System.out.println(r);
+//            if (r.getTestCase().equals("")) {
+//                System.out.println("this doesn't contain testcase");
+//            }
+//        }
+        System.out.println(" " + regressionList.size() + " regressions found");
+    }
+
+    private static void retrieveBugs4AllTestCase(String projectFullName) {//get all testcases(not the first one)
+        CLI.projectFullName = projectFullName;
+        System.out.println("Using project: " + projectFullName);
+        System.out.print("Retrieving regressions...");
+
+        regressionList = MysqlManager.selectRegressions4AllTestcase("select bfc,buggy,bic,work,testcase from " + reg_table_name +" where " +
+                proj_name +"='" + projectFullName + "'");
+        targetIdx = -1;
+
         System.out.println(" " + regressionList.size() + " regressions found");
     }
 
@@ -156,6 +287,8 @@ public class CLI {
         for (Regression r : CLI.regressionList) {
             System.out.print(String.format("%3d.", index++));
             System.out.println(r);
+            System.out.println(r.getRic());
+            System.out.println(r.getWork());
         }
     }
 
@@ -164,6 +297,49 @@ public class CLI {
         System.out.println(String.format("Checking out %s regression %d", projectFullName, i));
         targetIdx = i;
         File projectDir = sourceCodeManager.getProjectDir(projectFullName);
+
+        if (target.getId() == null) { // if no regression id, set the parameter i as regression id!
+            target.setId(String.valueOf(i));
+        }
+
+        Revision rfc = target.getRfc();
+        File rfcDir = sourceCodeManager.checkout(target.getId(),rfc, projectDir, projectFullName);
+        rfc.setLocalCodeDir(rfcDir);
+        target.setRfc(rfc);
+
+        Revision buggy = target.getBuggy();
+        File buggyDir = sourceCodeManager.checkout(target.getId(), buggy, projectDir, projectFullName);
+        buggy.setLocalCodeDir(buggyDir);
+        target.setBuggy(buggy);
+
+        Revision ric = target.getRic();
+        File ricDir = sourceCodeManager.checkout(target.getId(),ric, projectDir, projectFullName);
+        ric.setLocalCodeDir(ricDir);
+        target.setRic(ric);
+
+        Revision wc = target.getWork();
+        File wcDir = sourceCodeManager.checkout(target.getId(), wc, projectDir, projectFullName);
+        wc.setLocalCodeDir(wcDir);
+        target.setWork(wc);
+
+        List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, wc, buggy);
+        migrateTestAndDependency(rfc, needToTestMigrateRevisionList, target.getTestCase());
+
+//        System.out.println("rfc directory: " + rfcDir.toString());
+        System.out.println("ric directory: " + ricDir.toString());
+//        System.out.println("buggy directory: " + buggyDir.toString());
+//        System.out.println("wc directory: " + wcDir.toString());
+    }
+
+    private static void checkoutBic(int i) {
+        Regression target = regressionList.get(i - 1);
+        System.out.println(String.format("Checking out %s regression %d", projectFullName, i));
+        targetIdx = i;
+        File projectDir = sourceCodeManager.getProjectDir(projectFullName);
+
+        if (target.getId() == null) { // if no regression id, set the parameter i as regression id!
+            target.setId(String.valueOf(i));
+        }
 
         Revision rfc = target.getRfc();
         File rfcDir = sourceCodeManager.checkout(target.getId(),rfc, projectDir, projectFullName);
@@ -175,11 +351,49 @@ public class CLI {
         ric.setLocalCodeDir(ricDir);
         target.setRic(ric);
 
-        List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{ric});
+        List<Revision> needToTestMigrateRevisionList = List.of(ric);
         migrateTestAndDependency(rfc, needToTestMigrateRevisionList, target.getTestCase());
 
-        System.out.println("rfc directory: " + rfcDir.toString());
         System.out.println("ric directory: " + ricDir.toString());
+    }
+
+
+    private static void checkoutBicWc(String _projectFullName, String bicCommit, String wcCommit) {//todo: add directory
+        retrieveBugs(_projectFullName);
+        if (regressionList == null || regressionList.size() == 0) {
+            System.out.println("No such project found!");
+            return;
+        }
+        for (Regression regression : regressionList) {
+            if (regression.getRic().getCommitID().equals(bicCommit) && regression.getWork().getCommitID().equals(wcCommit)) {
+                System.out.println("checking out ric and wc version(with testcase)");
+                File projectDir = sourceCodeManager.getProjectDir(_projectFullName);
+
+                Revision rfc = regression.getRfc();
+                File rfcDir = sourceCodeManager.checkout(regression.getId(),rfc, projectDir, _projectFullName);
+                rfc.setLocalCodeDir(rfcDir);
+                regression.setRfc(rfc);
+
+                Revision ric = regression.getRic();
+                File ricDir = sourceCodeManager.checkout(regression.getId(),ric, projectDir, _projectFullName);
+                ric.setLocalCodeDir(ricDir);
+                regression.setRic(ric);
+
+                Revision wc = regression.getWork();
+                File wcDir = sourceCodeManager.checkout(regression.getId(), wc, projectDir, _projectFullName);
+                wc.setLocalCodeDir(wcDir);
+                regression.setWork(wc);
+
+                List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, wc);
+                migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
+
+                System.out.println("rfc directory: " + rfcDir.toString());
+                System.out.println("ric directory: " + ricDir.toString());
+                System.out.println("wc directory: " + wcDir.toString());
+                return;
+            }
+        }
+        System.out.println("No such regression found!");
     }
 
     private static void similarity() {
@@ -227,6 +441,61 @@ public class CLI {
         needToTestMigrateRevisionList.forEach(revision -> {
             migrator.migrateTestFromTo_0(rfc, revision);
         });
+    }
+
+    //checkout all bugs for a given project, even for those who has no testcase in database
+    //this cannot be used for testcase partitioning
+    public static void checkoutAll(String projectFullName) {
+        retrieveBugs(projectFullName);
+        int regCount = regressionList.size();
+        if (regCount == 0) {
+            System.out.println("No regression found! Please check the project name!");
+            return;
+        }
+        for (int i = 0; i < regCount; i++) {
+            checkout(i + 1);
+        }
+        System.out.println("Checkout " + regCount + " bugs successfully!");
+    }
+
+
+    //checkout all bugs(that contain non-empty testcase set) for a given project, the bug with no relevant testcase will be ignored
+    public static void checkoutAllWithTestcase(String projectFullName) {
+        retrieveBugs4AllTestCase(projectFullName); // get all bugs of current project
+
+        //checkout all regressions with non-empty testcase set
+        int regCount = regressionList.size();
+        if (regCount == 0) {
+            System.out.println("No regression found! Please check the project name!");
+            return;
+        }
+        int cnt = 0;
+        for (int i = 0; i < regCount; i++) {
+            if (regressionList.get(i).getTestCase().equals("")) continue;
+            checkout(i + 1);
+            cnt++;
+        }
+        System.out.println("Checkout " + cnt + " bugs successfully!");
+    }
+
+    public static void checkoutAllBicWithTestcase(String projectFullName) {
+        retrieveBugs4AllTestCase(projectFullName); // get all bugs of current project
+
+        //checkout all regressions with non-empty testcase set
+        int regCount = regressionList.size();
+        if (regCount == 0) {
+            System.out.println("No regression found! Please check the project name!");
+            return;
+        }
+        int cnt = 0;
+        for (int i = 0; i < regCount; i++) {
+            String testcase = regressionList.get(i).getTestCase();
+            if (testcase.equals("")) continue;
+            if (!testcase.contains(";")) continue;
+            checkoutBic(i + 1);
+            cnt++;
+        }
+        System.out.println("Checkout " + cnt + " bugs successfully!");
     }
 
 }

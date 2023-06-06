@@ -4,7 +4,7 @@ import java.io.File;
 
 public class Configs {
     //    public   final  static  String workSpace= System.getProperty("user.home") + "/Documents/miner-space";
-    public final static String workSpace = System.getProperty("user.home") + File.separator + "reg_space";
+    public final static String workSpace = System.getProperty("user.home") + File.separator + "codes" + File.separator + "graduate" + File.separator + "reg_space";
     public final static String URL = "jdbc:mysql://10.176.34" +
             ".95:3306/code_annotation2?useSSL=false&allowPublicKeyRetrieval" +
             "=true&characterEncoding=UTF8";
