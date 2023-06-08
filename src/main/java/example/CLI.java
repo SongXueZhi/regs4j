@@ -113,10 +113,15 @@ public class CLI {
                 } break;
 
                 case "tstwithcvg": {
-                    String codeDir = (args.length > 1) ? args[1] : ".";
-                    testWithCoverageCmd(codeDir);
+                    if (args.length == 1) {
+                        System.out.println("Usage: tstwithcvg <testcase> (<project dir>)");
+                        System.out.println("If you want to test all testcases, type a '-' as the first parameter");
+                        return;
+                    }
+                    String testcase = (args[1].length() > 1)? args[1] : "";
+                    String codeDir = (args.length > 2)? args[2] : ".";
+                    testWithCoverageCmd(codeDir, testcase);
                 } break;
-
 
                 case "similarity": {
                     if (args.length < 3) System.out.println("requires a project name and a reg id!");
@@ -532,21 +537,15 @@ public class CLI {
     }
 
     public static void testCmd(String codeDir, String testcase) {
-        String testCmd = "mvn test";
-        if (!testcase.equals("")) {
-            testCmd += " -Dtest=" + testcase;
-        }
-        testCmd += " -Dmaven.test.failure.ignore=true";
         File dir = new File(codeDir);
         if (dir.exists() && dir.isDirectory()) {
-            testCmd(dir, testCmd, true);
+            testCmd(dir, generateTestCmd(testcase, true), true);
         } else {
             System.out.println("This path is not a directory!");
         }
     }
 
     public static void compileCmd(String codeDir) {
-
         File dir = new File(codeDir);
         if (dir.exists() && dir.isDirectory()) {
             compileCmd(dir, true);
@@ -606,7 +605,7 @@ public class CLI {
         }
     }
 
-    public static void testWithCoverageCmd(String codeDir) {
+    public static void testWithCoverageCmd(String codeDir, String testcase) {
         CodeCoverage codeCoverage = new CodeCoverage();
         JacocoMavenManager jacocoMavenManager = new JacocoMavenManager();
         File dir = new File(codeDir);
@@ -616,7 +615,8 @@ public class CLI {
             e.printStackTrace();
         }
         compileCmd(dir, false);
-        testCmd(dir, "mvn test" + " -Dmaven.test.failure.ignore=true", false);
+
+        testCmd(dir, generateTestCmd(testcase, true), false);
         List<CoverNode> coverNodes = codeCoverage.readJacocoReports(dir);
         if (coverNodes == null) {
             System.out.println("Null cover nodes!");
@@ -646,5 +646,15 @@ public class CLI {
                 System.out.println(coverNode);
             }
         }
+    }
+
+    private static String generateTestCmd(String testcase, boolean failureIgnore) {
+        String testCmd = "mvn test";
+        if (!testcase.equals("")) {
+            testCmd += " -Dtest=" + testcase;
+        }
+        testCmd += " -Dmaven.test.failure.ignore=" + failureIgnore;
+//        System.out.println("cmd: " + testCmd);
+        return testCmd;
     }
 }
