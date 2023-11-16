@@ -13,7 +13,7 @@ import java.nio.file.Path;
 public class SourceCodeManager {
 
     private final static String metaProjectsDirPath = Configs.workSpace + File.separator + "meta_projects";
-    private final static String cacheProjectsDirPath = Configs.workSpace;
+    private final static String cacheProjectsDirPath = Configs.workSpace+ File.separator + "cache_code";;
 
     public File checkout(String regressionID,Revision revision, File projectFile, String projectFullName) {
         //copy source code from meta project dir

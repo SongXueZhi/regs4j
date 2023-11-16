@@ -127,6 +127,8 @@ public class MysqlManager {
             ResultSet rs = statement.executeQuery(sql);
             while (rs.next()) {
                 Regression regression = new Regression();
+                regression.setId(rs.getString("id"));
+                regression.setProjectFullName(rs.getString("project_full_name"));
                 regression.setRfc(new Revision(rs.getString("bfc"), "rfc"));
                 regression.setBuggy(new Revision(rs.getString("buggy"), "buggy"));
                 regression.setRic(new Revision(rs.getString("bic"), "ric"));
