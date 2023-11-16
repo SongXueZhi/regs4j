@@ -12,7 +12,7 @@ import java.util.*;
  */
 public class DDContext {
 
-    private List<DeltaDebugging> ddStrategyList = new ArrayList<>();
+    private final List<DeltaDebugging> ddStrategyList = new ArrayList<>();
 
     public DDContext addDDStrategy(DeltaDebugging... dd){
         ddStrategyList.addAll(Arrays.asList(dd));

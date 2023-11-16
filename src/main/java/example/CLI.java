@@ -175,7 +175,7 @@ public class CLI {
         ric.setLocalCodeDir(ricDir);
         target.setRic(ric);
 
-        List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{ric});
+        List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric);
         migrateTestAndDependency(rfc, needToTestMigrateRevisionList, target.getTestCase());
 
         System.out.println("rfc directory: " + rfcDir.toString());

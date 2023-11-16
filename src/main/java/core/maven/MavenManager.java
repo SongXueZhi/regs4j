@@ -33,8 +33,8 @@ import java.util.regex.Pattern;
 
 public class MavenManager {
     public final static String M2AFFIX = ".m2" + File.separator + "repository";
-    private MavenXpp3Reader mavenReader = new MavenXpp3Reader();
-    private MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
+    private final MavenXpp3Reader mavenReader = new MavenXpp3Reader();
+    private final MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
 
     /**
      * Default find jar from "~/.m2/repository/"
@@ -121,7 +121,7 @@ public class MavenManager {
     	StringBuilder sb = new StringBuilder();
     	int start = 0;
     	while(m.find()) {
-    		sb.append(s.substring(start, m.start()));
+    		sb.append(s, start, m.start());
     		String prop = props.getProperty(m.group(1));
     		if (prop != null) {
     			sb.append(prop);

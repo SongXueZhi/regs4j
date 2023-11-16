@@ -70,7 +70,7 @@ public class Example {
             count += 1;
             System.out.println(String.format("Handling %s: %d/%d", projectFullName, count, regressionList.size()));
             
-            List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{buggy, ric, work});
+            List<Revision> needToTestMigrateRevisionList = Arrays.asList(buggy, ric, work);
             migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
 
             //testWithJacoco

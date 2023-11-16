@@ -15,12 +15,12 @@ import java.util.Arrays;
 import java.util.List;
 
 public class NewCLI {
-    private static Options OPTIONS = new Options();
-    private static CommandLine commandLine;
-    private static String HELP_STRING = null;
-    private static SourceCodeManager sourceCodeManager = new SourceCodeManager();
+    private static final Options OPTIONS = new Options();
+    private static final SourceCodeManager sourceCodeManager = new SourceCodeManager();
     static Reducer reducer = new Reducer();
     static Migrator migrator = new Migrator();
+    private static CommandLine commandLine;
+    private static String HELP_STRING = null;
 
     public static void main(String[] args) {
         CommandLineParser commandLineParser = new DefaultParser();
@@ -46,7 +46,8 @@ public class NewCLI {
         OPTIONS.addOption("test", "test", true, "test bugID");
     }
 
-    private static void processCommands() throws InvalidVersionException, MissingVersionException, InvalidBugIDException {
+    private static void processCommands() throws InvalidVersionException, MissingVersionException,
+            InvalidBugIDException {
         if (commandLine.hasOption("h")) {
             printHelp();
         }
@@ -54,7 +55,9 @@ public class NewCLI {
             processCheckoutCommand();
         }
     }
-    private static void processCheckoutCommand() throws InvalidVersionException, MissingVersionException, InvalidBugIDException {
+
+    private static void processCheckoutCommand() throws InvalidVersionException, MissingVersionException,
+            InvalidBugIDException {
         String bugIDParam = commandLine.getOptionValue("checkout");
         int bugID = Integer.parseInt(bugIDParam);
         if (commandLine.hasOption("v")) {
@@ -72,28 +75,28 @@ public class NewCLI {
         }
     }
 
-    private static void retrieveBugs(int bugID,String version) throws InvalidBugIDException, InvalidVersionException {
+    private static void retrieveBugs(int bugID, String version) throws InvalidBugIDException, InvalidVersionException {
         List<Regression> regressionList = MysqlManager.selectRegressions("select id,project_full_name,bfc,buggy,bic," +
                 "work,testcase from " +
                 "regression where " +
                 "id='" + bugID + "'");
-        if(regressionList == null || regressionList.size() == 0){
-            throw  new InvalidBugIDException("Invalid bug id"+bugID);
+        if (regressionList == null || regressionList.size() == 0) {
+            throw new InvalidBugIDException("Invalid bug id" + bugID);
         }
 
         Regression regression = regressionList.get(0);
-        String projectName = regression.getProjectFullName().replace("/","_");
+        String projectName = regression.getProjectFullName().replace("/", "_");
         File projectDir = sourceCodeManager.getProjectDir(projectName);
         Revision rfc = regression.getRfc();
-        File rfcDir = sourceCodeManager.checkout(regression.getId(),rfc, projectDir, projectName);
+        File rfcDir = sourceCodeManager.checkout(regression.getId(), rfc, projectDir, projectName);
         rfc.setLocalCodeDir(rfcDir);
 
-        if (version.equals("bfc")){
-            System.out.println("checkout successful:"+rfcDir);
+        if (version.equals("bfc")) {
+            System.out.println("checkout successful:" + rfcDir);
             return;
         }
         Revision targetVersion;
-        switch (version){
+        switch (version) {
             case "bic":
                 targetVersion = regression.getRic();
                 break;
@@ -106,16 +109,17 @@ public class NewCLI {
             default:
                 throw new InvalidVersionException("Invalid version: " + version);
         }
-        File targetVersionDir = sourceCodeManager.checkout(regression.getId(),targetVersion, projectDir, projectName);
+        File targetVersionDir = sourceCodeManager.checkout(regression.getId(), targetVersion, projectDir, projectName);
         targetVersion.setLocalCodeDir(targetVersionDir);
 
-        List<Revision> needToTestMigrateRevisionList = Arrays.asList(new Revision[]{targetVersion});
+        List<Revision> needToTestMigrateRevisionList = Arrays.asList(targetVersion);
         migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regression.getTestCase());
 
-        System.out.println("checkout successful:"+targetVersionDir);
-        System.out.println("test command:"+regression.getTestCase());
+        System.out.println("checkout successful:" + targetVersionDir);
+        System.out.println("test command:" + regression.getTestCase());
 
     }
+
     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
         migrator.equipRfcWithChangeInfo(rfc);
         reducer.reduceTestCases(rfc, testCase);
@@ -149,6 +153,7 @@ public class NewCLI {
             super(message);
         }
     }
+
     static class InvalidBugIDException extends Exception {
         public InvalidBugIDException(String message) {
             super(message);

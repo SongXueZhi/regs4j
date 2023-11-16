@@ -225,7 +225,7 @@ public class ProbDD {
 //            copyRelatedFile(path,tmpPath,relatedFile);
             FileUtilx.copyDirToTarget(path,tmpPath);
 
-            String result = codeReduceTest(tmpPath, seq2test);;
+            String result = codeReduceTest(tmpPath, seq2test);
             bw.append( "\n" + time + " " + result + ": revert: " + idx2test);
             //bw.append("\n" + seq2test);
             System.out.println(time + " " + result + ": revert: " + idx2test);

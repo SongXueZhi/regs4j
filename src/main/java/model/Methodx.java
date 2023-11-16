@@ -71,7 +71,7 @@ public class Methodx {
 
 	public enum EditType{
 		INSERT,
-		EDIT;
+		EDIT
 	}
 
 	@Override

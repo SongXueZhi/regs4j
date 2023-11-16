@@ -42,7 +42,7 @@ public class StringUtil {
             }
         }
         int editDistance = distanceMatrix[s1.length() - 1][s2.length() - 1];
-        double lenSum = (double) (s1.length() - 1 + s2.length() - 1);
+        double lenSum = s1.length() - 1 + s2.length() - 1;
         double similarity =  lenSum - editDistance;
         return similarity / lenSum;
     }

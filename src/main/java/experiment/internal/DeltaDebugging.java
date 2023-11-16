@@ -6,5 +6,5 @@ package experiment.internal;
  * @Description:
  */
 public interface DeltaDebugging {
-    public DDOutput run();
+    DDOutput run();
 }

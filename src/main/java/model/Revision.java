@@ -9,7 +9,7 @@ public class Revision {
     File localCodeDir = null;
     private String name;
     private String commitID;
-    private List<ChangedFile> changedFiles = new LinkedList<>();
+    private final List<ChangedFile> changedFiles = new LinkedList<>();
 
     public Revision(String commmitID, String name) {
         this.commitID = commmitID;
