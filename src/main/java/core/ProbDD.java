@@ -18,100 +18,94 @@ import static java.lang.Math.*;
 import static utils.FileUtilx.readListFromFile;
 import static utils.FileUtilx.readSetFromFile;
 
-public class ProbDD {
+public class ProbDD extends DD {
 
     static Reducer reducer = new Reducer();
     static Migrator migrator = new Migrator();
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
     static String projectName = (String) readSetFromFile("projects.txt").toArray()[0];
 
-    static BufferedWriter bw;
-    static {
-        try {
-            bw = new BufferedWriter(new FileWriter("detail" + new SimpleDateFormat("_yyyyMMddHHmmss").format(new Date()), true));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     static Map<String,Map<String,Integer>> cc = new HashMap<>();
     Map<String,Map<String,Integer>> loop = new HashMap<>();
 
-    public static void main(String [] args) throws Exception {
-
-        File projectDir = sourceCodeManager.getProjectDir(projectName);
-        String sql = "select regression_uuid,bfc,buggy,bic,work," +
-                "testcase,project_full_name from regression\n" +
-                "where project_full_name ='" + projectName +
-//                "regression.project_full_name,results.error_type from regression\n" +
-//                "inner join results\n" +
-//                "on regression.bfc = results.rfc_id\n" +
-//                "where results.error_type is not null and regression.project_full_name ='" + projectName +
-                "'";
-        List<Regression> regressionList = MysqlManager.getRegressionsWithoutError(sql);
-
-        List<String> uuid = readListFromFile("uuid.txt");
-        regressionList.removeIf(regression -> !uuid.contains(regression.getId()));
-
-        for (int i = 0; i < regressionList.size(); i++) {
-            Regression regressionTest = regressionList.get(i);
-            String regressionId =  regressionTest.getId();
-            String path = regressionId +  new SimpleDateFormat("_yyyyMMddHHmmss").format(new Date());
-            FileOutputStream puts = new FileOutputStream(path,true);
-            PrintStream out = new PrintStream(puts);
-            System.setOut(out);
-            bw.append("\n" + regressionId);
-            System.out.println("\n" + regressionId);
-
-            Revision rfc = regressionTest.getRfc();
-            File rfcDir = sourceCodeManager.checkout(regressionId, rfc, projectDir, projectName);
-            rfc.setLocalCodeDir(rfcDir);
-
-            Revision ric = regressionTest.getRic();
-            File ricDir = sourceCodeManager.checkout(regressionId, ric, projectDir, projectName);
-            ric.setLocalCodeDir(ricDir);
-
-            Revision work = regressionTest.getWork();
-            File workDir = sourceCodeManager.checkout(regressionId, work, projectDir, projectName);
-            work.setLocalCodeDir(workDir);
-
-            Revision buggy = regressionTest.getBuggy();
-            File buggyDir = sourceCodeManager.checkout(regressionId, buggy, projectDir, projectName);
-            buggy.setLocalCodeDir(buggyDir);
-
-            List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, work, buggy);
-            migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regressionTest.getTestCase());
-
-//            //2.create symbolicLink for good and bad
-//            sourceCodeManager.symbolicLink(regression.getId(),projectFullName, ric, work);
-
-            //3.create sh(build.sh&test.sh)
-            sourceCodeManager.createShell(regressionTest.getId(), projectName, ric, regressionTest.getTestCase());
-            sourceCodeManager.createShell(regressionTest.getId(), projectName, work, regressionTest.getTestCase());
-            sourceCodeManager.createShell(regressionTest.getId(), projectName, rfc, regressionTest.getTestCase());
-            sourceCodeManager.createShell(regressionTest.getId(), projectName, buggy, regressionTest.getTestCase());
-
-            List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
-            hunks.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
-            hunks.removeIf(hunkEntity -> hunkEntity.getOldPath().contains("test"));
-            List<String> relatedFile =  getRelatedFile(hunks);
-            System.out.println("原hunk的数量是: " + hunks.size() + ":" + hunks);
-            bw.append("\n原hunk的数量是: " + hunks.size());
-            bw.append("\n" + hunks + "\n");
-
-            long start = System.currentTimeMillis();
-            long end = System.currentTimeMillis();
-            System.out.println(String.format("Total Time：%d ms", end - start));
-            DDOutput ccHunks1 = ddmin(ric.getLocalCodeDir().toString(),hunks);
-            DDOutput ccHunks2 = ProbDD(ric.getLocalCodeDir().toString(),hunks);
-            //cc.put(regressionId,new HashMap<>(){{put("ddmin", ccHunks1.size());}});
-            //MysqlManager.insertCC("bic", regressionId, "ProbDD", ccHunks);
-        }
-        bw.close();
-
+    public ProbDD() throws IOException {
     }
 
-    public static DDOutput ddmin(String path, List<HunkEntity> hunkEntities) throws IOException {
+//    public static void main(String [] args) throws Exception {
+//
+//        File projectDir = sourceCodeManager.getProjectDir(projectName);
+//        String sql = "select regression_uuid,bfc,buggy,bic,work," +
+//                "testcase,project_full_name from regression\n" +
+//                "where project_full_name ='" + projectName +
+////                "regression.project_full_name,results.error_type from regression\n" +
+////                "inner join results\n" +
+////                "on regression.bfc = results.rfc_id\n" +
+////                "where results.error_type is not null and regression.project_full_name ='" + projectName +
+//                "'";
+//        List<Regression> regressionList = MysqlManager.getRegressionsWithoutError(sql);
+//
+//        List<String> uuid = readListFromFile("uuid.txt");
+//        regressionList.removeIf(regression -> !uuid.contains(regression.getId()));
+//
+//        for (int i = 0; i < regressionList.size(); i++) {
+//            Regression regressionTest = regressionList.get(i);
+//            String regressionId =  regressionTest.getId();
+//            String path = regressionId +  new SimpleDateFormat("_yyyyMMddHHmmss").format(new Date());
+//            FileOutputStream puts = new FileOutputStream(path,true);
+//            PrintStream out = new PrintStream(puts);
+//            System.setOut(out);
+//            bw.append("\n" + regressionId);
+//            System.out.println("\n" + regressionId);
+//
+//            Revision rfc = regressionTest.getRfc();
+//            File rfcDir = sourceCodeManager.checkout(regressionId, rfc, projectDir, projectName);
+//            rfc.setLocalCodeDir(rfcDir);
+//
+//            Revision ric = regressionTest.getRic();
+//            File ricDir = sourceCodeManager.checkout(regressionId, ric, projectDir, projectName);
+//            ric.setLocalCodeDir(ricDir);
+//
+//            Revision work = regressionTest.getWork();
+//            File workDir = sourceCodeManager.checkout(regressionId, work, projectDir, projectName);
+//            work.setLocalCodeDir(workDir);
+//
+//            Revision buggy = regressionTest.getBuggy();
+//            File buggyDir = sourceCodeManager.checkout(regressionId, buggy, projectDir, projectName);
+//            buggy.setLocalCodeDir(buggyDir);
+//
+//            List<Revision> needToTestMigrateRevisionList = Arrays.asList(ric, work, buggy);
+//            migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regressionTest.getTestCase());
+//
+////            //2.create symbolicLink for good and bad
+////            sourceCodeManager.symbolicLink(regression.getId(),projectFullName, ric, work);
+//
+//            //3.create sh(build.sh&test.sh)
+//            sourceCodeManager.createShell(regressionTest.getId(), projectName, ric, regressionTest.getTestCase());
+//            sourceCodeManager.createShell(regressionTest.getId(), projectName, work, regressionTest.getTestCase());
+//            sourceCodeManager.createShell(regressionTest.getId(), projectName, rfc, regressionTest.getTestCase());
+//            sourceCodeManager.createShell(regressionTest.getId(), projectName, buggy, regressionTest.getTestCase());
+//
+//            List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
+//            hunks.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
+//            hunks.removeIf(hunkEntity -> hunkEntity.getOldPath().contains("test"));
+//            List<String> relatedFile =  getRelatedFile(hunks);
+//            System.out.println("原hunk的数量是: " + hunks.size() + ":" + hunks);
+//            bw.append("\n原hunk的数量是: " + hunks.size());
+//            bw.append("\n" + hunks + "\n");
+//
+//            long start = System.currentTimeMillis();
+//            long end = System.currentTimeMillis();
+//            System.out.println(String.format("Total Time：%d ms", end - start));
+////            DDOutput ccHunks1 = ddmin(ric.getLocalCodeDir().toString(),hunks);
+////            DDOutput ccHunks2 = ProbDD(ric.getLocalCodeDir().toString(),hunks);
+//            //cc.put(regressionId,new HashMap<>(){{put("ddmin", ccHunks1.size());}});
+//            //MysqlManager.insertCC("bic", regressionId, "ProbDD", ccHunks);
+//        }
+//        bw.close();
+//
+//    }
+
+    public DDOutput ddmin(String path, List<HunkEntity> hunkEntities) throws IOException {
         int hunkSize = hunkEntities.size();
         long start = System.currentTimeMillis();
         HashMap<HunkEntity, Integer> hunkMap = new HashMap<>();
@@ -129,7 +123,7 @@ public class ProbDD {
         boolean isTimeout = false;
 
         while(hunkEntities.size() >= 2 ){
-            if((System.currentTimeMillis() - start) / 1000 > 14400){
+            if((System.currentTimeMillis() - start) / 1000 > 7200){
                 isTimeout = true;
                 break;
             }
@@ -137,7 +131,7 @@ public class ProbDD {
             int subset_length = hunkEntities.size() / n;
             boolean some_complement_is_failing = false;
             while (location < hunkEntities.size()){
-                if((System.currentTimeMillis() - start) / 1000 > 14400){
+                if((System.currentTimeMillis() - start) / 1000 > 7200){
                     isTimeout = true;
                     break;
                 }
@@ -190,7 +184,7 @@ public class ProbDD {
     }
 
     //传入的path是ric的全路径
-    public static DDOutput ProbDD(String path,List<HunkEntity> hunkEntities) throws IOException {
+    public DDOutput ProbDD(String path,List<HunkEntity> hunkEntities) throws IOException {
         int hunkSize = hunkEntities.size();
         long start = System.currentTimeMillis();
         bw.append("\n -------开始ProbDD---------");
@@ -208,7 +202,7 @@ public class ProbDD {
         }
         boolean isTimeout = false;
         while (!testDone(p) ){
-            if((System.currentTimeMillis() - start) / 1000 > 14400){
+            if((System.currentTimeMillis() - start) / 1000 > 7200){
                 isTimeout = true;
                 break;
             }
@@ -227,7 +221,6 @@ public class ProbDD {
 
             String result = codeReduceTest(tmpPath, seq2test);;
             bw.append( "\n" + time + " " + result + ": revert: " + idx2test);
-            //bw.append("\n" + seq2test);
             System.out.println(time + " " + result + ": revert: " + idx2test);
             if(Objects.equals(result, "PASS")){
                 for(int set0 = 0; set0 < p.size(); set0++){
@@ -590,7 +583,7 @@ public class ProbDD {
         Revert.revert(path,hunkEntities);
         Executor executor = new Executor();
         executor.setDirectory(new File(path));
-        String result = executor.exec("./build.sh; ./test.sh").replaceAll("\n","");
+        String result = executor.exec("chmod u+x build.sh; chmod u+x test.sh; ./build.sh; ./test.sh").replaceAll("\n","").trim();
         return result;
     }
 

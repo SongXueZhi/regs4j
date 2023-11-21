@@ -2,6 +2,7 @@ package core.git;
 
 import model.HunkEntity;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.Edit;
@@ -39,8 +40,19 @@ public class GitUtils {
     }
 
     public static boolean checkout(String commitID, File codeDir) {
-        try (Git git = Git.open(codeDir)) {
-            git.checkout().setName(commitID).call();
+        try (Repository repository = RepositoryProvider.getRepoFromLocal(codeDir); Git git = new Git(repository)) {
+            if (commitID.contains("~1")){
+                try (RevWalk revWalk = new RevWalk(repository);) {
+                    RevCommit commit = revWalk.parseCommit(repository.resolve(commitID));
+//                    git.reset().setMode(ResetCommand.ResetType.HARD).call();
+//                    git.checkout().setForce(true).setName(commitID).call();
+                    git.checkout().setName(commit.getName()).setCreateBranch(false).setForceRefUpdate(true).call();
+                }
+            }else {
+                git.reset().setMode(ResetCommand.ResetType.HARD).call();
+                git.checkout().setForce(true).setName(commitID).call();
+//                git.checkout().setName(commitID).setCreateBranch(false).setForceRefUpdate(true).call();
+            }
             return true;
         } catch (Exception e) {
             e.printStackTrace();

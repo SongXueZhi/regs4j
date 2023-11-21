@@ -310,6 +310,72 @@ public class MysqlManager {
         }
     }
 
+    public static void insertAllResult(int regressionId, DDOutput ddOutput, String tool, String version) throws Exception {
+        if (conn == null) {
+            getConn();
+        }
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = conn.prepareStatement("insert ignore into regression_dd_result(regression_id,version, tool,hunk_size, cc_size,loop_time,run_time) values(?,?,?,?,?,?,?)");
+            pstmt.setInt(1, regressionId);
+            pstmt.setString(2, version);
+            pstmt.setString(3, tool);
+            pstmt.setInt(4, ddOutput.getHunk());
+            pstmt.setInt(5, ddOutput.getCc().size());
+            pstmt.setInt(6, ddOutput.getLoop());
+            pstmt.setLong(7, ddOutput.getTime());
+            pstmt.executeUpdate();
+
+            List<HunkEntity> hunks = ddOutput.getCc();
+            for(HunkEntity hunk: hunks) {
+                int hunkId = 0;
+                //todo 判断这条hunk是否存在
+                String sql = "select id from hunks where new_path='" + hunk.getNewPath() +
+                        "' and old_path='" + hunk.getOldPath() +
+                        "' and beginA='" + hunk.getBeginA() +
+                        "' and beginB='" + hunk.getBeginB() +
+                        "' and endA='" + hunk.getEndA() +
+                        "' and endB='" + hunk.getEndB() +
+                        "' and type='" + hunk.getType().toString() +
+                        "' limit 1";
+                getStatement();
+                ResultSet selectResult = statement.executeQuery(sql);
+                if(selectResult.next()){
+                    hunkId = selectResult.getInt("id");
+                }
+                else {
+                    pstmt = conn.prepareStatement("insert into hunks(new_path, old_path, " +
+                            "beginA, beginB, endA, endB, type) values(?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                    pstmt.setString(1, hunk.getNewPath());
+                    pstmt.setString(2, hunk.getOldPath());
+                    pstmt.setInt(3, hunk.getBeginA());
+                    pstmt.setInt(4, hunk.getBeginB());
+                    pstmt.setInt(5, hunk.getEndA());
+                    pstmt.setInt(6, hunk.getEndB());
+                    pstmt.setString(7, hunk.getType().toString());
+                    pstmt.executeUpdate();
+                    ResultSet rs = pstmt.getGeneratedKeys();
+                    if (rs.next()) {
+                        hunkId = rs.getInt(1);
+                    }
+                }
+
+                pstmt = conn.prepareStatement("insert ignore into regression_cc_result(regression_id,version, tool,hunk_id) values(?,?,?,?)");
+                pstmt.setInt(1, regressionId);
+                pstmt.setString(2, version);
+                pstmt.setString(3, tool);
+                pstmt.setInt(4, hunkId);
+                pstmt.executeUpdate();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (pstmt!=null){
+                pstmt.close();
+            }
+        }
+    }
+
     public static List<HunkEntity> selectCC(String revision_name, String regression_uuid, String tool) throws Exception{
         List<HunkEntity> hunkList = new ArrayList<>();
         if (conn == null) {

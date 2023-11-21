@@ -2,13 +2,17 @@ package core;
 
 import core.git.GitUtils;
 import example.Revert;
+import model.DDOutput;
 import model.HunkEntity;
 import model.Regression;
 import model.Revision;
+import org.apache.commons.io.FileUtils;
 import run.Executor;
 import utils.FileUtilx;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -16,91 +20,87 @@ import static java.lang.Math.*;
 import static utils.FileUtilx.readListFromFile;
 import static utils.FileUtilx.readSetFromFile;
 
-public class rfcDD {
+public class rfcDD extends DD{
 
     static Reducer reducer = new Reducer();
     static Migrator migrator = new Migrator();
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
     static String projectName = (String) readSetFromFile("projects.txt").toArray()[0];
 
-//    static BufferedWriter bw;
-//    static {
-//        try {
-//            bw = new BufferedWriter(new FileWriter("detail", true));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
-    public static void main(String [] args) throws Exception {
-
-        File projectDir = sourceCodeManager.getProjectDir(projectName);
-        String sql = "select regression_uuid,bfc,buggy,bic,work," +
-                "testcase," +
-                "regression.project_full_name,results.error_type from regression\n" +
-                "inner join results\n" +
-                "on regression.bfc = results.rfc_id\n" +
-                "where results.error_type is not null and regression.project_full_name ='" + projectName +
-                "'";
-        List<Regression> regressionList = MysqlManager.getRegressions(sql);
-
-        List<String> uuid = readListFromFile("uuid.txt");
-        regressionList.removeIf(regression -> !uuid.contains(regression.getId()));
-        for (int i = 0; i < regressionList.size(); i++) {
-            Regression regressionTest = regressionList.get(i);
-            String regressionId =  regressionTest.getId();
-            //bw.append(regressionId);
-            System.out.println(regressionId);
-
-            Revision rfc = regressionTest.getRfc();
-            File rfcDir = sourceCodeManager.checkout(regressionId, rfc, projectDir, projectName);
-            rfc.setLocalCodeDir(rfcDir);
-
-            Revision buggy = regressionTest.getBuggy();
-            File buggyDir = sourceCodeManager.checkout(regressionId, buggy, projectDir, projectName);
-            buggy.setLocalCodeDir(buggyDir);
-
-            List<Revision> needToTestMigrateRevisionList = List.of(buggy);
-            migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regressionTest.getTestCase());
-
-//            //2.create symbolicLink for good and bad
-//            sourceCodeManager.symbolicLink(regression.getId(),projectFullName, ric, work);
-
-            //3.create sh(build.sh&test.sh)
-            sourceCodeManager.createShell(regressionTest.getId(), projectName, rfc, regressionTest.getTestCase(),
-                    regressionTest.getErrorType());
-            sourceCodeManager.createShell(regressionTest.getId(), projectName, buggy, regressionTest.getTestCase(),
-                    regressionTest.getErrorType());
-
-            List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(buggyDir, rfc.getCommitID(), buggy.getCommitID());
-            long startTime = System.currentTimeMillis();
-            List<HunkEntity> ccHunks = ProbDD(buggy.getLocalCodeDir().toString(),hunks);
-            //MysqlManager.insertCC("bfc", regressionId, "ProbDD", ccHunks);
-
-            //List<HunkEntity> ccHunks2 = ddmin(buggy.getLocalCodeDir().toString(),hunks);
-            //MysqlManager.insertCC("bfc", regressionId, "ddmin", ccHunks2);
-
-            long endTime = System.currentTimeMillis();
-            long usedTime = (endTime-startTime)/1000;
-            System.out.println("用时: " + usedTime + "s");
-            //bw.append("\n用时: " + usedTime + "s");
-            System.out.println("得到hunk数量：" + ccHunks.size() + ":" + ccHunks);
-            //bw.append("\n得到hunk数量：" + failHunk.size() + ":" +failHunk + "\n");
-        }
-        //bw.close();
-
+    public rfcDD() throws IOException {
     }
 
+
+//    public static void main(String [] args) throws Exception {
+//
+//        File projectDir = sourceCodeManager.getProjectDir(projectName);
+//        String sql = "select regression_uuid,bfc,buggy,bic,work," +
+//                "testcase," +
+//                "regression.project_full_name,results.error_type from regression\n" +
+//                "inner join results\n" +
+//                "on regression.bfc = results.rfc_id\n" +
+//                "where results.error_type is not null and regression.project_full_name ='" + projectName +
+//                "'";
+//        List<Regression> regressionList = MysqlManager.getRegressions(sql);
+//
+//        List<String> uuid = readListFromFile("uuid.txt");
+//        regressionList.removeIf(regression -> !uuid.contains(regression.getId()));
+//        for (int i = 0; i < regressionList.size(); i++) {
+//            Regression regressionTest = regressionList.get(i);
+//            String regressionId =  regressionTest.getId();
+//            //bw.append(regressionId);
+//            System.out.println(regressionId);
+//
+//            Revision rfc = regressionTest.getRfc();
+//            File rfcDir = sourceCodeManager.checkout(regressionId, rfc, projectDir, projectName);
+//            rfc.setLocalCodeDir(rfcDir);
+//
+//            Revision buggy = regressionTest.getBuggy();
+//            File buggyDir = sourceCodeManager.checkout(regressionId, buggy, projectDir, projectName);
+//            buggy.setLocalCodeDir(buggyDir);
+//
+//            List<Revision> needToTestMigrateRevisionList = List.of(buggy);
+//            migrateTestAndDependency(rfc, needToTestMigrateRevisionList, regressionTest.getTestCase());
+//
+////            //2.create symbolicLink for good and bad
+////            sourceCodeManager.symbolicLink(regression.getId(),projectFullName, ric, work);
+//
+//            //3.create sh(build.sh&test.sh)
+//            sourceCodeManager.createShell(regressionTest.getId(), projectName, rfc, regressionTest.getTestCase(),
+//                    regressionTest.getErrorType());
+//            sourceCodeManager.createShell(regressionTest.getId(), projectName, buggy, regressionTest.getTestCase(),
+//                    regressionTest.getErrorType());
+//
+//            List<HunkEntity> hunks = GitUtils.getHunksBetweenCommits(buggyDir, rfc.getCommitID(), buggy.getCommitID());
+//            long startTime = System.currentTimeMillis();
+////            List<HunkEntity> ccHunks = ProbDD(buggy.getLocalCodeDir().toString(),hunks);
+//            //MysqlManager.insertCC("bfc", regressionId, "ProbDD", ccHunks);
+//
+//            //List<HunkEntity> ccHunks2 = ddmin(buggy.getLocalCodeDir().toString(),hunks);
+//            //MysqlManager.insertCC("bfc", regressionId, "ddmin", ccHunks2);
+//
+//            long endTime = System.currentTimeMillis();
+//            long usedTime = (endTime-startTime)/1000;
+//            System.out.println("用时: " + usedTime + "s");
+//            //bw.append("\n用时: " + usedTime + "s");
+////            System.out.println("得到hunk数量：" + ccHunks.size() + ":" + ccHunks);
+//            //bw.append("\n得到hunk数量：" + failHunk.size() + ":" +failHunk + "\n");
+//        }
+//        //bw.close();
+//
+//    }
+
     //传入的path是buggy的全路径
-    public static List<HunkEntity> ProbDD(String path,List<HunkEntity> hunkEntities) throws IOException {
+    public DDOutput ProbDD(String path,List<HunkEntity> hunkEntities) throws IOException {
         hunkEntities.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
         hunkEntities.removeIf(hunkEntity -> hunkEntity.getOldPath().contains("test"));
-
+        int hunkSize = hunkEntities.size();
+        long start = System.currentTimeMillis();
         List<String> relatedFile =  getRelatedFile(hunkEntities);
         System.out.println("原hunk的数量是: " + hunkEntities.size());
-//        bw.append("\n原hunk的数量是: " + hunkEntities.size());
-//        bw.append("\n" + hunkEntities);
-//        bw.append("\n -------开始ProbDD---------");
+        bw.append("\n原hunk的数量是: " + hunkEntities.size());
+        bw.append("\n" + hunkEntities);
+        bw.append("\n -------开始ProbDD---------");
         int time = 0;
         String tmpPath = path.replace("_buggy","_tmp");
         FileUtilx.copyDirToTarget(path,tmpPath);
@@ -112,7 +112,12 @@ public class rfcDD {
             retIdx.add(i);
             p.add(0.1);
         }
-        while (!testDone(p)){
+        boolean isTimeout = false;
+        while (!testDone(p) ){
+            if((System.currentTimeMillis() - start) / 1000 > 7200){
+                isTimeout = true;
+                break;
+            }
             List<Integer> delIdx = sample(p);
             if(delIdx.size() == 0){
                 break;
@@ -123,12 +128,12 @@ public class rfcDD {
             for (int idxelm: idx2test){
                 seq2test.add(hunkEntities.get(idxelm));
             }
-            FileUtilx.copyDirToTarget(path,tmpPath + time);
+            FileUtilx.copyDirToTarget(path,tmpPath);
 //            copyRelatedFile(path,tmpPath,relatedFile);
-            System.out.print(time);
-//            bw.append( "\n" + time);
-//            bw.append( " revert: " + idx2test);
-            if(Objects.equals(codeReduceTest(tmpPath + time,seq2test), "PASS")){
+            String result = codeReduceTest(tmpPath, seq2test);;
+            System.out.println(time + " " + result + ": revert: " + idx2test);
+
+            if(Objects.equals(result, "PASS")){
                 for(int set0 = 0; set0 < p.size(); set0++){
                     if(!idx2test.contains(set0)){
                         p.set(set0,0.0);
@@ -145,59 +150,78 @@ public class rfcDD {
                     }
                 }
             }
-            //bw.append("\np: " + p);
+            bw.append("\np: " + p);
         }
+        long end = System.currentTimeMillis();
+        if(isTimeout){
+            bw.append("\n运行超时");
+            System.out.println("运行超时");
+            return new DDOutput(hunkSize, time, (end - start) / 1000, new ArrayList<HunkEntity>());
+        }
+        System.out.printf("Total Time：%d ms%n", end - start);
+        bw.append(String.format("%nTotal Time：%d ms", end - start));
         System.out.println("循环次数: " + time);
-        //bw.append("\n循环次数: " + time);
-        return retseq;
+        bw.append("\n循环次数: " + time);
+        System.out.println("得到hunk数量：" + retseq.size() + ":" +retseq);
+        bw.append("\n得到hunk数量：" + retseq.size() + ":" + retseq + "\n");
+        FileUtils.deleteDirectory(new File(tmpPath));
+        return new DDOutput(hunkSize, time, (end - start) / 1000, retseq);
     }
 
-    public static List<HunkEntity> ddmin(String path, List<HunkEntity> hunkEntities) throws IOException {
+    public DDOutput ddmin(String path, List<HunkEntity> hunkEntities) throws IOException {
+        int hunkSize = hunkEntities.size();
+        long start = System.currentTimeMillis();
         HashMap<HunkEntity, Integer> hunkMap = new HashMap<>();
         for (HunkEntity hunk: hunkEntities) {
             hunkMap.put(hunk, hunkEntities.indexOf(hunk));
         }
-        hunkEntities.removeIf(hunkEntity -> hunkEntity.getNewPath().contains("test"));
-        hunkEntities.removeIf(hunkEntity -> hunkEntity.getOldPath().contains("test"));
         List<String> relatedFile =  getRelatedFile(hunkEntities);
         System.out.println("原hunk的数量是: " + hunkEntities.size());
-//        bw.append("\n原hunk的数量是: " + hunkEntities.size());
-//        bw.append("\n" + hunkEntities);
-//        bw.append("\n -------开始ddmin---------");
+        bw.append("\n原hunk的数量是: " + hunkEntities.size());
+        bw.append("\n" + hunkEntities);
+        bw.append("\n -------开始ddmin---------");
 
         int time = 0;
         String tmpPath = path.replace("_buggy","_tmp");
         FileUtilx.copyDirToTarget(path,tmpPath);
         assert Objects.equals(codeReduceTest(tmpPath, hunkEntities), "PASS");
         int n = 2;
+        boolean isTimeout = false;
 
         while(hunkEntities.size() >= 2){
-            int start = 0;
+            if((System.currentTimeMillis() - start) / 1000 > 7200){
+                isTimeout = true;
+                break;
+            }
+            int location = 0;
             int subset_length = hunkEntities.size() / n;
             boolean some_complement_is_failing = false;
-            while (start < hunkEntities.size()){
+            while (location < hunkEntities.size()){
+                if((System.currentTimeMillis() - start) / 1000 > 7200){
+                    isTimeout = true;
+                    break;
+                }
                 time = time + 1;
                 List<HunkEntity> complement = new ArrayList<>();
                 for(int i = 0; i < hunkEntities.size();i++ ){
-                    if(i < start || i >= start + subset_length) {
+                    if(i < location || i >= location + subset_length) {
                         complement.add(hunkEntities.get(i));
                     }
                 }
-                FileUtilx.copyDirToTarget(path,tmpPath + time);
-                System.out.print(time);
-                //bw.append("\n" + time);
                 List<Integer> index = new ArrayList<>();
                 for (HunkEntity com: complement) {
                     index.add(hunkMap.get(com));
                 }
-                //bw.append(" revert: " + index);
-                if (Objects.equals(codeReduceTest(tmpPath + time,complement), "PASS")){
+                FileUtilx.copyDirToTarget(path,tmpPath);
+                String result = codeReduceTest(tmpPath, complement);
+                System.out.println(time + " " + result + ": revert: " + index);
+                if (Objects.equals(result, "PASS")){
                     hunkEntities = complement;
                     n = max(n - 1, 2);
                     some_complement_is_failing = true;
                     break;
                 }
-                start += subset_length;
+                location += subset_length;
             }
             if(!some_complement_is_failing){
                 if (n == hunkEntities.size()){
@@ -206,9 +230,20 @@ public class rfcDD {
                 n = min(n * 2, hunkEntities.size());
             }
         }
+        long end = System.currentTimeMillis();
+        if(isTimeout){
+            bw.append("\n运行超时");
+            System.out.println("运行超时");//超时时间2h
+            return new DDOutput(hunkSize, time, (end - start) / 1000, new ArrayList<HunkEntity>());
+        }
+        System.out.printf("Total Time：%d ms%n", end - start);
         System.out.println("循环次数: " + time);
-        //bw.append("\n循环次数: " + time);
-        return hunkEntities;
+        System.out.println("得到hunk数量：" + hunkEntities.size() + ":" +hunkEntities);
+        bw.append(String.format("\nTotal Time：%d ms", end - start));
+        bw.append("\n循环次数: " + time);
+        bw.append("\n得到hunk数量：" + hunkEntities.size() + ":" + hunkEntities + "\n");
+        FileUtils.deleteDirectory(new File(tmpPath));
+        return new DDOutput(hunkSize, time, (end - start) / 1000, hunkEntities);
     }
 
     public static List<HunkEntity> removeTestFile(List<HunkEntity> hunkEntities){
@@ -234,7 +269,7 @@ public class rfcDD {
         Revert.fix(path,hunkEntities);
         Executor executor = new Executor();
         executor.setDirectory(new File(path));
-        String result = executor.exec("./build.sh; ./test.sh").replaceAll("\n","");
+        String result = executor.exec("chmod u+x build.sh; chmod u+x test.sh; ./build.sh; ./test.sh").replaceAll("\n","").trim();
         System.out.println(result + ": fix: " + hunkEntities);
         //bw.append("  " + result );
         return result;

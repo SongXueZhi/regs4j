@@ -29,10 +29,10 @@ public class DD {
     final static int MIN_SET_SIZE = 3;
     final static int MAX_SET_SIZE = 20;
     final static double cSigma = 0.1;
-    final static double dSigma = 0.1;
+    final static double dSigma = 0.15;
     final static double dRate = 0.1;
-    final static int setSize = 6;
-    final static int relatedNum = 2;
+    final static int setSize = 9;
+    final static int relatedNum = 3;
     final static int criticalNum = 2;
     static FuzzInput fuzzInput;
     static BufferedWriter bw;
@@ -270,9 +270,13 @@ public class DD {
     static List<Integer> prodd(List<Integer> set) {
         List<Integer> retSet = set;
         List<Double> cPro = new ArrayList<>();
+        Double[][] dPro = new Double[set.size()][set.size()];
 
         for (int i = 0; i < set.size(); i++) {
             cPro.add(cSigma);
+            for(int j = 0; j < set.size(); j++){
+                dPro[i][j] = dSigma;
+            }
         }
 
         int loop = 0;
@@ -290,6 +294,10 @@ public class DD {
                 for (int set0 = 0; set0 < cPro.size(); set0++) {
                     if (!testSet.contains(set0)) {
                         cPro.set(set0, 0.0);
+                        for(int i = 0; i < dPro.length; i++){
+                            dPro[i][set0] = 0.0;
+                            dPro[set0][i] = 0.0;
+                        }
                     }
                 }
                 retSet = testSet;
@@ -304,8 +312,44 @@ public class DD {
                         cPro.set(setd, cProTmp.get(setd) + delta);
                     }
                 }
+
+                //FAIL: d_pro=0
+                if(result == FAL){
+                    for (int set0 = 0; set0 < cPro.size() ; set0++) {
+                        if (testSet.contains(set0)) {
+                            for(int i = 0; i < dPro.length; i++){
+                                if(!testSet.contains(i)) {
+                                    dPro[set0][i] = 0.0;
+                                }
+                            }
+                        }
+                    }
+                }else{
+                    //CE: d_pro++
+                    double tmplog = 1;
+                    for(int i = 0; i < testSet.size(); i++){
+                        for(int j = 0; j < delSet.size(); j++){
+                            //有没可能等于1
+                            if((dPro[testSet.get(i)][delSet.get(j)] != 0) ){
+                                tmplog *= (1 - dPro[testSet.get(i)][delSet.get(j)]);
+                            }
+                        }
+                    }
+                    for(int i = 0; i < testSet.size(); i++){
+                        for(int j = 0; j < delSet.size(); j++){
+                            if((dPro[testSet.get(i)][delSet.get(j)] != 0) ){
+                                dPro[testSet.get(i)][delSet.get(j)] = min(dPro[testSet.get(i)][delSet.get(j)] / (1 - tmplog), 1.0);
+                            }
+                        }
+                    }
+                }
             }
             System.out.println("cPro: " + cPro);
+//            System.out.println("dPro: " + Arrays.deepToString(dPro));
+            System.out.println("dPro: " );
+            for(int i = 0; i < dPro.length; i++){
+                System.out.println( Arrays.toString(dPro[i]));
+            }
 
         }
         return retSet;

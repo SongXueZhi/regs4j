@@ -13,7 +13,7 @@ import java.nio.file.Path;
 public class SourceCodeManager {
 
     private final static String metaProjectsDirPath = Configs.workSpace + File.separator + "meta_projects";
-    private final static String cacheProjectsDirPath = Configs.workSpace;
+    private final static String cacheProjectsDirPath = Configs.workSpace + File.separator + "cache_projects";
 
     public File checkout(String regressionID,Revision revision, File projectFile, String projectFullName) {
         //copy source code from meta project dir
@@ -41,6 +41,34 @@ public class SourceCodeManager {
         }
         return null;
     }
+
+    public static File checkout(String regressionID,Revision revision, File projectFile, String message, String projectFullName) {
+        //copy source code from meta project dir
+        String projectDirName = projectFullName.replace("/", "_");
+        File projectCacheDir = new File(cacheProjectsDirPath + File.separator + message + File.separator, projectDirName);
+        if (projectCacheDir.exists() && !projectCacheDir.isDirectory()) {
+            projectCacheDir.delete();
+        }
+        projectCacheDir.mkdirs();
+
+        File revisionDir = new File(projectCacheDir,regressionID+"_"+revision.getName());
+        try {
+            if (revisionDir.exists()) {
+                FileUtils.forceDelete(revisionDir);
+            }
+            FileUtils.copyDirectoryToDirectory(projectFile, projectCacheDir);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+        new File(projectCacheDir, projectDirName).renameTo(revisionDir);
+        //git checkout
+        if (GitUtils.checkout(revision.getCommitID(), revisionDir)) {
+            return revisionDir;
+        }
+        return null;
+    }
+
 
     //download source project
     public File getProjectDir(String projectFullName) {
@@ -105,17 +133,20 @@ public class SourceCodeManager {
                             String errorType) {
         String projectDirName = projectFullName.replace("/", "_");
         File buildFile =
-                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator + regressionID+"_"+revision.getName(),
+                new File(cacheProjectsDirPath + File.separator + regressionID+"_"+revision.getName(),
                         "build.sh");
         File testFile =
-                new File(cacheProjectsDirPath + File.separator + projectDirName + File.separator +  regressionID+"_"+revision.getName(),
+                new File(cacheProjectsDirPath + File.separator +  regressionID+"_"+revision.getName(),
                         "test.sh");
         if (!buildFile.exists()) {
             try {
                 buildFile.createNewFile();
+                buildFile.canRead();
+                buildFile.canExecute();
+                buildFile.canWrite();
                 String s1 = "#!/bin/bash";
-                String s2 = "mvn clean compile test-compile &> /dev/null";
-                FileUtils.write(buildFile, s1 + "\n" + s2, "UTF-8");
+                String s2 = "mvn clean compile test-compile -Dstyle.color=never -q &> /dev/null";
+                FileUtils.writeStringToFile(buildFile, s1 + "\n" + s2, "UTF-8");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -141,7 +172,7 @@ public class SourceCodeManager {
                         "else\n" +
                         "    /bin/echo -n 'UNRESOLVED'\n" +
                         "fi";
-                FileUtils.write(testFile, s1 + s2 + s3 + s4 + s5, "UTF-8");
+                FileUtils.writeStringToFile(testFile, s1 + s2 + s3 + s4 + s5, "UTF-8");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -170,7 +201,7 @@ public class SourceCodeManager {
                 buildFile.canExecute();
                 buildFile.canWrite();
                 String s1 = "#!/bin/bash";
-                String s2 = "mvn clean compile test-compile -Dstyle.color=never -q";
+                String s2 = "mvn clean compile test-compile -Dstyle.color=never -q &> /dev/null";
                 FileUtils.write(buildFile, s1 + "\n" + s2, "UTF-8");
             } catch (IOException e) {
                 e.printStackTrace();

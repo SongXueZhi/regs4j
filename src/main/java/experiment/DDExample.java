@@ -24,7 +24,7 @@ public class DDExample {
 //        FileOutputStream puts = new FileOutputStream(path,true);
 //        PrintStream out = new PrintStream(puts);
 //        System.setOut(out);
-        fuzz();
+        fuzzProbDDPlusM();
 
     }
     public static Map<String, DDOutput> fuzzAll(){
@@ -336,7 +336,7 @@ public class DDExample {
         for (int i = 0; i < 1; i++) {
             DDContext ddContext = new DDContext();
             //FuzzInput fuzzInput = FuzzUtil.createFuzzInput(5,2,2);
-            FuzzInput fuzzInput = FuzzUtil.createFuzzInputWithDependencies(7,7,3,2,false);
+            FuzzInput fuzzInput = FuzzUtil.createFuzzInputWithDependencies(7,7,1,2,false);
             List<Integer> cc = new ArrayList<Integer>(fuzzInput.criticalChanges);
             DDUtil.getTestSetWithDependency(cc, fuzzInput.relatedMap);
 
