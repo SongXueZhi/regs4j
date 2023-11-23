@@ -20,6 +20,11 @@ public class Runner {
     protected File revDir;
     protected String testCase;
 
+    public Runner(String revPath, String testCase){
+        this.revDir = new File(revPath);
+        this.testCase = testCase;
+    }
+
     public Runner(File revDir, String testCase) {
         this.revDir = revDir;
         this.testCase = testCase;

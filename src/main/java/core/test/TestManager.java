@@ -24,14 +24,33 @@ public class TestManager {
         List<String> errorMessages = new ArrayList<>();
         for (String file : reportDirectory.list()) {
         	if (file.matches("TEST.*\\.xml")) {
-        		String errorMessage = getError(new File(reportDirectory, file));
+        		String errorMessage = getError(new File(reportDirectory, file), true);
                 if (errorMessage != null)
                     errorMessages.add(errorMessage);
         	}
         }
         return errorMessages;
     }
-    
+
+    private String getError(File codePath, boolean isErrorLine) {
+        try {
+            Document doc = reader.read(codePath);
+            Element root = doc.getRootElement();
+            Element testCase = root.element("testcase");
+            Element error = testCase.element("error");
+            if (error == null)
+                error = testCase.element("failure");
+            if (error != null) {
+                String errorMsg = error.attributeValue("type") + ": " + error.attributeValue("message");
+                return errorMsg;
+            }
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     private String getError(File codePath) {
         try {
             Document doc = reader.read(codePath);

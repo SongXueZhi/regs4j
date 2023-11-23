@@ -176,10 +176,8 @@ public class rfcDD extends DD{
             hunkMap.put(hunk, hunkEntities.indexOf(hunk));
         }
         List<String> relatedFile =  getRelatedFile(hunkEntities);
-        System.out.println("原hunk的数量是: " + hunkEntities.size());
-        bw.append("\n原hunk的数量是: " + hunkEntities.size());
-        bw.append("\n" + hunkEntities);
         bw.append("\n -------开始ddmin---------");
+        System.out.println("\n -------开始ddmin---------");
 
         int time = 0;
         String tmpPath = path.replace("_buggy","_tmp");
@@ -203,6 +201,10 @@ public class rfcDD extends DD{
                 }
                 time = time + 1;
                 List<HunkEntity> complement = new ArrayList<>();
+//                if (location >= 0 && location < hunkEntities.size() && location + subset_length <= hunkEntities.size()) {
+//                    complement.addAll(hunkEntities.subList(0, location));
+//                    complement.addAll(hunkEntities.subList(location + subset_length, hunkEntities.size()));
+//                }
                 for(int i = 0; i < hunkEntities.size();i++ ){
                     if(i < location || i >= location + subset_length) {
                         complement.add(hunkEntities.get(i));
@@ -214,6 +216,7 @@ public class rfcDD extends DD{
                 }
                 FileUtilx.copyDirToTarget(path,tmpPath);
                 String result = codeReduceTest(tmpPath, complement);
+                bw.append( "\n" + time + " " + result + ": revert: " + index);
                 System.out.println(time + " " + result + ": revert: " + index);
                 if (Objects.equals(result, "PASS")){
                     hunkEntities = complement;
@@ -270,7 +273,7 @@ public class rfcDD extends DD{
         Executor executor = new Executor();
         executor.setDirectory(new File(path));
         String result = executor.exec("chmod u+x build.sh; chmod u+x test.sh; ./build.sh; ./test.sh").replaceAll("\n","").trim();
-        System.out.println(result + ": fix: " + hunkEntities);
+//        System.out.println(result + ": fix: " + hunkEntities);
         //bw.append("  " + result );
         return result;
     }
