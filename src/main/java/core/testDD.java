@@ -24,13 +24,13 @@ public class testDD {
     static SourceCodeManager sourceCodeManager = new SourceCodeManager();
 
     public static void main(String [] args) throws Exception {
-        test("bfc", "ddmin");
+        test("bfc_revert", "probdd");
     }
 
     public static void test(String version, String tool) throws Exception {
         String sql = "select * from regressions_all where is_clean=1 and is_dirty=0 and id not in " +
                 "(select regression_id from regression_dd_result where version = '" + version + "' and tool = '" + tool + "');\n";
-//        String sql = "select * from regressions_all where id = 2";
+//        String sql = "select * from regressions_all where id = 10";
         List<Regression> regressionList = MysqlManager.selectCleanRegressions(sql);
         for (int i = 0; i < regressionList.size(); i++) {
             try{
@@ -63,6 +63,7 @@ public class testDD {
 
                 DD dd;
                 List<HunkEntity> hunks;
+                String path;
                 if(version.equals("bfc")) {
                     dd = new rfcDD();
                     String buggyPath = buggyDir.toString();
@@ -70,19 +71,43 @@ public class testDD {
                     FileUtilx.copyDirToTarget(buggyPath,tmpPath);
                     Runner buggyRunner = new Runner(tmpPath, regression.getTestCase());
                     List<String> buggyErrorMessages = buggyRunner.getErrorMessages();
+                    if(buggyErrorMessages.size() == 0 || buggyErrorMessages.get(0).equals("") || buggyErrorMessages.get(0).equals("null")){
+                        continue;
+                    }
                     regression.setErrorType(buggyErrorMessages.get(0));
                     sourceCodeManager.createShell(regression.getId(), projectName, ric, regression.getTestCase(), regression.getErrorType());
                     sourceCodeManager.createShell(regression.getId(), projectName, work, regression.getTestCase(), regression.getErrorType());
                     sourceCodeManager.createShell(regression.getId(), projectName, rfc, regression.getTestCase(), regression.getErrorType());
                     sourceCodeManager.createShell(regression.getId(), projectName, buggy, regression.getTestCase(), regression.getErrorType());
                     hunks = GitUtils.getHunksBetweenCommits(buggyDir, rfc.getCommitID(), buggy.getCommitID());
-                }else {
+                    path = buggyPath;
+                }else if(version.equals("bfc_revert")){
+                    dd = new ProbDD();
+                    String buggyPath = buggyDir.toString();
+                    String tmpPath = buggyPath.replace("_buggy","_tmp");
+                    FileUtilx.copyDirToTarget(buggyPath,tmpPath);
+                    Runner buggyRunner = new Runner(tmpPath, regression.getTestCase());
+                    List<String> buggyErrorMessages = buggyRunner.getErrorMessages();
+//                    System.out.println(buggyErrorMessages);
+//                    System.out.println(buggyErrorMessages.get(0));
+                    if(buggyErrorMessages.size() == 0 || buggyErrorMessages.get(0).equals("") || buggyErrorMessages.get(0).equals("null")){
+                        continue;
+                    }
+                    regression.setErrorType(buggyErrorMessages.get(0));
+                    sourceCodeManager.createShell4Bfc(regression.getId(), projectName, ric, regression.getTestCase(), regression.getErrorType());
+                    sourceCodeManager.createShell4Bfc(regression.getId(), projectName, work, regression.getTestCase(), regression.getErrorType());
+                    sourceCodeManager.createShell4Bfc(regression.getId(), projectName, rfc, regression.getTestCase(), regression.getErrorType());
+                    sourceCodeManager.createShell4Bfc(regression.getId(), projectName, buggy, regression.getTestCase(), regression.getErrorType());
+                    hunks = GitUtils.getHunksBetweenCommits(rfcDir, rfc.getCommitID(), buggy.getCommitID());
+                    path = rfcDir.toString();
+                } else  {
                     dd = new ProbDD();
                     sourceCodeManager.createShell(regression.getId(), projectName, ric, regression.getTestCase());
                     sourceCodeManager.createShell(regression.getId(), projectName, work, regression.getTestCase());
                     sourceCodeManager.createShell(regression.getId(), projectName, rfc, regression.getTestCase());
                     sourceCodeManager.createShell(regression.getId(), projectName, buggy, regression.getTestCase());
                     hunks = GitUtils.getHunksBetweenCommits(ricDir, ric.getCommitID(), work.getCommitID());
+                    path = ricDir.toString();
                 }
                 dd.bw.append("\n" + regressionId);
 
@@ -92,9 +117,9 @@ public class testDD {
                 System.out.println("原hunk的数量是: " + hunks.size() + ":" + hunks);
                 DDOutput ddoutput = null;
                 if(tool.equals("ddmin")){
-                    ddoutput = dd.ddmin(buggy.getLocalCodeDir().toString(),hunks);
+                    ddoutput = dd.ddmin(path,hunks);
                 }else if(tool.equals("probdd")) {
-                    ddoutput = dd.ProbDD(ric.getLocalCodeDir().toString(), hunks);
+                    ddoutput = dd.ProbDD(path, hunks);
                 }
                 MysqlManager.insertAllResult(Integer.parseInt(regressionId), ddoutput, tool, version);
 

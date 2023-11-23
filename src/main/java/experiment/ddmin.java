@@ -63,5 +63,6 @@ public class ddmin implements DeltaDebugging {
         }
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = loop;
-        return ddOutputWithLoop;    }
+        return ddOutputWithLoop;
+    }
 }

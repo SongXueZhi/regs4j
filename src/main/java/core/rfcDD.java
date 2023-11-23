@@ -102,7 +102,7 @@ public class rfcDD extends DD{
         bw.append("\n" + hunkEntities);
         bw.append("\n -------开始ProbDD---------");
         int time = 0;
-        String tmpPath = path.replace("_buggy","_tmp");
+        String tmpPath = path.substring(0, path.lastIndexOf('_') + 1) + "tmp";
         FileUtilx.copyDirToTarget(path,tmpPath);
         assert Objects.equals(codeReduceTest(tmpPath, hunkEntities), "PASS");
         List<HunkEntity> retseq = hunkEntities;
@@ -180,7 +180,7 @@ public class rfcDD extends DD{
         System.out.println("\n -------开始ddmin---------");
 
         int time = 0;
-        String tmpPath = path.replace("_buggy","_tmp");
+        String tmpPath = path.substring(0, path.lastIndexOf('_') + 1) + "tmp";
         FileUtilx.copyDirToTarget(path,tmpPath);
         assert Objects.equals(codeReduceTest(tmpPath, hunkEntities), "PASS");
         int n = 2;

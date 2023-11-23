@@ -116,7 +116,8 @@ public class ProbDD extends DD {
         bw.append("\n -------开始ddmin---------");
         System.out.println("\n -------开始ddmin---------");
         int time = 0;
-        String tmpPath = path.replace("_ric","_tmp");
+        String tmpPath = path.substring(0, path.lastIndexOf('_') + 1) + "tmp";
+//        String tmpPath = path.replace("_ric","_tmp");
         FileUtilx.copyDirToTarget(path,tmpPath);
         assert Objects.equals(codeReduceTest(tmpPath, hunkEntities), "PASS");
         int n = 2;
@@ -190,7 +191,7 @@ public class ProbDD extends DD {
         bw.append("\n -------开始ProbDD---------");
         System.out.println("\n -------开始ProbDD---------");
         int time = 0;
-        String tmpPath = path.replace("_ric","_tmp");
+        String tmpPath = path.substring(0, path.lastIndexOf('_') + 1) + "tmp";
         FileUtilx.copyDirToTarget(path,tmpPath);
         assert Objects.equals(codeReduceTest(tmpPath, hunkEntities), "PASS");
         List<HunkEntity> retseq = hunkEntities;

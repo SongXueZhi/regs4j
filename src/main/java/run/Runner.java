@@ -59,11 +59,15 @@ public class Runner {
     }
 
     public void run() {
-        String buildCommand = "mvn compile";
+        String buildCommand = "mvn clean compile test-compile";
         String testCommand = "mvn test -Dtest=" + this.testCase + " " + "-Dmaven.test.failure.ignore=true";
         try {
-            new Executor().setDirectory(this.revDir).exec(buildCommand);
-            new Executor().setDirectory(this.revDir).exec(testCommand, 5);
+            Executor executor = new Executor();
+            executor.setDirectory(this.revDir);
+            String result = executor.exec(buildCommand);
+            result = executor.exec(testCommand, 200);
+//            new Executor().setDirectory(this.revDir).exec(buildCommand);
+//            new Executor().setDirectory(this.revDir).exec(testCommand, 200);
             this.errorMessages = testManager.getErrors(this.revDir);
         } catch (TimeoutException ex) {
             this.errorMessages = new ArrayList<>();

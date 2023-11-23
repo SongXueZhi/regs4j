@@ -112,7 +112,7 @@ public class Revert {
      * @param hunkEntities 需要退回的hunk
      */
     public static List<String> revertFile(String tmpPath, List<HunkEntity> hunkEntities){
-        String workPath = tmpPath.substring(0,tmpPath.lastIndexOf("_")) + "_work";
+        String workPath = tmpPath.substring(0,tmpPath.lastIndexOf("_")) + "_buggy";//todo bic替换为work/bfc-buggy版本
         HunkEntity tmpHunk = hunkEntities.get(0);
         if(!Objects.equals(tmpHunk.getNewPath(), tmpHunk.getOldPath())){
             String fileFullOldPath = workPath + File.separator + tmpHunk.getOldPath();

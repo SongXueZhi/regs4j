@@ -13,7 +13,7 @@ import java.nio.file.Path;
 public class SourceCodeManager {
 
     private final static String metaProjectsDirPath = Configs.workSpace + File.separator + "meta_projects";
-    private final static String cacheProjectsDirPath = Configs.workSpace + File.separator + "cache_projects";
+    private final static String cacheProjectsDirPath = Configs.workSpace + File.separator + "cache_projects" + File.separator + "bfc_revert_probdd";//todo
 
     public File checkout(String regressionID,Revision revision, File projectFile, String projectFullName) {
         //copy source code from meta project dir
@@ -127,6 +127,83 @@ public class SourceCodeManager {
         Path gLink = goodLink.toPath();
         Files.createSymbolicLink(bLink, badSource);
         Files.createSymbolicLink(gLink, goodSource);
+    }
+
+    public void createShell4Bfc(String regressionID, String projectFullName, Revision revision, String testcase,
+                            String errorType) {
+        String projectDirName = projectFullName.replace("/", "_");
+        File buildFile =
+                new File(cacheProjectsDirPath + File.separator + regressionID+"_"+revision.getName(),
+                        "build.sh");
+        File testFile =
+                new File(cacheProjectsDirPath + File.separator +  regressionID+"_"+revision.getName(),
+                        "test.sh");
+        if (!buildFile.exists()) {
+            try {
+                buildFile.createNewFile();
+                buildFile.canRead();
+                buildFile.canExecute();
+                buildFile.canWrite();
+                String s1 = "#!/bin/bash";
+                String s2 = "mvn clean compile test-compile -Dstyle.color=never -q &> /dev/null";
+                FileUtils.writeStringToFile(buildFile, s1 + "\n" + s2, "UTF-8");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (!testFile.exists()) {
+            try {
+                /**
+                 * # 移除_OUT中的所有空格和换行符
+                 * _CLEAN_OUT=$(echo "${_OUT}" | tr -d '[:space:]')
+                 *
+                 * # 定义目标字符串，并移除所有空格和换行符
+                 * _TARGET='java.lang.AssertionError: Expected: iterable containing [<0L>, <1L>, <2L>]      but: No item matched: <2L>'
+                 * _CLEAN_TARGET=$(echo "${_TARGET}" | tr -d '[:space:]')
+                 * # 检查_CLEAN_OUT是否包含_CLEAN_TARGET
+                 * if [[ "${_CLEAN_OUT}" == *"${_CLEAN_TARGET}"* ]]; then
+                 *     SUCCESS=1
+                 * else
+                 *     SUCCESS=0
+                 * fi
+                 *
+                 * echo "${SUCCESS}"
+                 */
+//                errorType = errorType.replaceAll("\\s+", "");
+                testFile.createNewFile();
+                String s1 = "#!/bin/bash" + "\n";
+                String s2 = "_OUT=$(timeout 300 mvn test -Dtest=" + testcase + " 2>&1)" + "\n";
+                String s3 = "_CLEAN_OUT=$(echo ${_OUT} | tr -d '[:space:]')" + "\n";
+                String s4 = "_TARGET='" + errorType + "'" + "\n";
+                String s5 = "_CLEAN_TARGET=$(echo ${_TARGET} | tr -d '[:space:]')" + "\n";
+                String s6 = "FAIL=$(echo ${_OUT} | grep -c 'BUILD SUCCESS')" + "\n";
+                String s7 = "SUCCESS=$(echo ${_CLEAN_OUT} | grep -c -F ${_CLEAN_TARGET})" + "\n";
+                String s8 = "if\n" +
+                        " [ \"${SUCCESS}\" = '1' ]; then\n" +
+                        "    PASS='1'\n" +
+                        "else\n" +
+                        "    PASS='0'\n" +
+                        "fi\n" +
+                        "\n" +
+                        "if [ ${PASS} = '1' -a ${FAIL} = '0' ]; then\n" +
+                        "    /bin/echo -n 'PASS'\n" +
+                        "elif [ ${FAIL} = '1' ]; then\n" +
+                        "    /bin/echo -n 'FAIL'\n" +
+                        "else\n" +
+                        "    /bin/echo -n 'UNRESOLVED'\n" +
+                        "fi";
+                FileUtils.writeStringToFile(testFile, s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8, "UTF-8");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+        buildFile.setExecutable(true,false);
+        buildFile.setReadable(true,false);
+        buildFile.setWritable(true,false);
+        testFile.setExecutable(true,false);
+        testFile.setReadable(true,false);
+        testFile.setWritable(true,false);
     }
 
     public void createShell(String regressionID, String projectFullName, Revision revision, String testcase,
