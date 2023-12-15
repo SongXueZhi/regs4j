@@ -38,10 +38,9 @@ public class DDExample {
         relatedMap.put(9, 4);
         relatedMap.put(4, 9);
         Set<Integer> criticalChanges = new HashSet<>(3);
-        //Note that! there may be 1 cc(when c1 equals c2) or 2 cc.
-        for (int i = 0; i < 3; i++) {
-            criticalChanges.add(i);
-        }
+        criticalChanges.add(0);
+        criticalChanges.add(1);
+        criticalChanges.add(2);
 
         fuzzInput.fullSet = set;
         fuzzInput.relatedMap = relatedMap;
