@@ -2,6 +2,8 @@ package experiment;
 
 import experiment.internal.DDOutput;
 import experiment.internal.TestRunner;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.commons.lang3.RandomUtils;
 import utils.DDUtil;
 import utils.FuzzUtil;
@@ -9,9 +11,7 @@ import utils.FuzzUtil;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @Author: sxz
@@ -24,9 +24,39 @@ public class DDExample {
 //        FileOutputStream puts = new FileOutputStream(path,true);
 //        PrintStream out = new PrintStream(puts);
 //        System.setOut(out);
-        fuzzProbDDPlusM();
+//        fuzzProbDDPlusM();
+        DDContext ddContext = new DDContext();
+        TestRunner testRunner = new TestRunner4Fuzz();
+        FuzzInput fuzzInput = new FuzzInput();
 
+        List<Integer> set= new ArrayList<>(10);
+        for (int i = 0; i < 10; i++) {
+            set.add(i);
+        }
+        MultiValuedMap<Integer, Integer> relatedMap = new ArrayListValuedHashMap<>(3);
+        relatedMap.put(5, 3);
+        relatedMap.put(9, 4);
+        relatedMap.put(4, 9);
+        Set<Integer> criticalChanges = new HashSet<>(3);
+        //Note that! there may be 1 cc(when c1 equals c2) or 2 cc.
+        for (int i = 0; i < 3; i++) {
+            criticalChanges.add(i);
+        }
+
+        fuzzInput.fullSet = set;
+        fuzzInput.relatedMap = relatedMap;
+        fuzzInput.criticalChanges = criticalChanges;
+
+        System.out.println("\ndd input:");
+        System.out.println(fuzzInput.fullSet);
+        System.out.println(fuzzInput.relatedMap);
+        System.out.println(fuzzInput.criticalChanges);
+        Map<String, DDOutput> ddOutputHashMap = ddContext.addDDStrategy(
+                            new ProDD(fuzzInput,testRunner)).start();
+            DDOutput proDDOutput = ddOutputHashMap.get(ProDD.class.getName());
+        System.out.println("proDDOutput: " + proDDOutput.resultIndexList);
     }
+
     public static Map<String, DDOutput> fuzzAll(){
         DDContext ddContext = new DDContext();
         FuzzInput fuzzInput = FuzzUtil.createFuzzInput();

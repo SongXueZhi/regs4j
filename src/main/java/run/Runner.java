@@ -64,8 +64,8 @@ public class Runner {
         try {
             Executor executor = new Executor();
             executor.setDirectory(this.revDir);
-            String result = executor.exec(buildCommand);
-            result = executor.exec(testCommand, 200);
+            String result = executor.exec(buildCommand,10);
+            result = executor.exec(testCommand, 5);
 //            new Executor().setDirectory(this.revDir).exec(buildCommand);
 //            new Executor().setDirectory(this.revDir).exec(testCommand, 200);
             this.errorMessages = testManager.getErrors(this.revDir);

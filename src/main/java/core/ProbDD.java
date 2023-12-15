@@ -359,7 +359,7 @@ public class ProbDD extends DD {
 //                List<Double> avgPro = getAvgPro(cPro, dPro);
 //                idx2test = select(avgPro, selectSetSize);
 //                Collections.sort(idx2test);
-//                //todo 如何确认不再尝试条件
+//                //如何确认不再尝试条件
 //                if(test > 1000){
 //                    idx2test = retIdx;
 //                    break;
@@ -435,7 +435,7 @@ public class ProbDD extends DD {
 //                int selectSetSize = RandomUtils.nextInt(1, retIdx.size());
 //                idx2test = select(cPro, selectSetSize);
 //                Collections.sort(idx2test);
-//                //todo 如何确认不再尝试条件
+//                //如何确认不再尝试条件
 //                if(test > 1000){
 //                    idx2test = retIdx;
 //                    break;

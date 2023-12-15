@@ -71,7 +71,7 @@ public class testDD {
                     FileUtilx.copyDirToTarget(buggyPath,tmpPath);
                     Runner buggyRunner = new Runner(tmpPath, regression.getTestCase());
                     List<String> buggyErrorMessages = buggyRunner.getErrorMessages();
-                    if(buggyErrorMessages.size() == 0 || buggyErrorMessages.get(0).equals("") || buggyErrorMessages.get(0).equals("null")){
+                    if(buggyErrorMessages == null || buggyErrorMessages.size() == 0 || buggyErrorMessages.get(0) == null || buggyErrorMessages.get(0).equals("") || buggyErrorMessages.get(0).equals("null")){
                         continue;
                     }
                     regression.setErrorType(buggyErrorMessages.get(0));
@@ -90,7 +90,7 @@ public class testDD {
                     List<String> buggyErrorMessages = buggyRunner.getErrorMessages();
 //                    System.out.println(buggyErrorMessages);
 //                    System.out.println(buggyErrorMessages.get(0));
-                    if(buggyErrorMessages.size() == 0 || buggyErrorMessages.get(0).equals("") || buggyErrorMessages.get(0).equals("null")){
+                    if(buggyErrorMessages == null || buggyErrorMessages.size() == 0 || buggyErrorMessages.get(0) == null || buggyErrorMessages.get(0).equals("") || buggyErrorMessages.get(0).equals("null")){
                         continue;
                     }
                     regression.setErrorType(buggyErrorMessages.get(0));

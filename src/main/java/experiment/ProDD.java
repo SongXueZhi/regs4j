@@ -7,6 +7,7 @@ import experiment.internal.TestRunner;
 import experiment.internal.TestRunner.status;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static utils.DDUtil.*;
 
@@ -34,14 +35,13 @@ public class ProDD implements DeltaDebugging {
         }
         int loop = 0;
         while (!testDone(cPro)) {
-            loop++;
             List<Integer> delSet = sample(cPro);
             if (delSet.size() == 0) {
                 break;
             }
             List<Integer> testSet = getTestSet(retSet, delSet);
             status result = testRunner.getResult(testSet,ddInput);
-            System.out.println(loop + ": test: " + testSet + " : " + result );
+            System.out.println(loop++ + ": test: " + testSet + " : " + result );
             if (result == status.PASS) {
                 //PASS: cPro=0 dPro=0
                 for (int set0 = 0; set0 < cPro.size(); set0++) {
@@ -62,7 +62,10 @@ public class ProDD implements DeltaDebugging {
                     }
                 }
             }
-            //System.out.println("cPro: " + cPro);
+            String formatted = cPro.stream()
+                    .map(num -> String.format("%.2f", num)) // 格式化为两位小数的字符串
+                    .collect(Collectors.joining("   ")); // 以空格连接所有字符串
+            System.out.println("cPro: " + formatted);
         }
         DDOutputWithLoop ddOutputWithLoop = new DDOutputWithLoop(retSet);
         ddOutputWithLoop.loop = loop;

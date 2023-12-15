@@ -38,11 +38,17 @@ public class TestManager {
             Element root = doc.getRootElement();
             Element testCase = root.element("testcase");
             Element error = testCase.element("error");
+            String errorMsg = null;
             if (error == null){
                 error = testCase.element("failure");
             }
             if (error != null) {
-                String errorMsg = error.attributeValue("type") + ": " + error.attributeValue("message");
+                if(error.attributeValue("type") != null){
+                    errorMsg += error.attributeValue("type") + ": ";
+                }
+                if(error.attributeValue("message") != null){
+                    errorMsg += error.attributeValue("message");
+                }
                 return errorMsg;
             }
             return null;
