@@ -1,6 +1,6 @@
 package utils;
 
-import experiment.FuzzInput;
+import experiments.dd_experiment.FuzzInput;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.commons.lang3.RandomUtils;
