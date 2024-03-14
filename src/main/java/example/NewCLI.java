@@ -122,7 +122,7 @@ public class NewCLI {
 
     static void migrateTestAndDependency(Revision rfc, List<Revision> needToTestMigrateRevisionList, String testCase) {
         migrator.equipRfcWithChangeInfo(rfc);
-        reducer.reduceTestCases(rfc, testCase);
+//        reducer.reduceTestCases(rfc, testCase);
         needToTestMigrateRevisionList.forEach(revision -> {
             migrator.migrateTestFromTo_0(rfc, revision);
         });

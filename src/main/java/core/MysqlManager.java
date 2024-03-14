@@ -133,7 +133,7 @@ public class MysqlManager {
                 regression.setBuggy(new Revision(rs.getString("buggy"), "buggy"));
                 regression.setRic(new Revision(rs.getString("bic"), "ric"));
                 regression.setWork(new Revision(rs.getString("work"), "work"));
-                regression.setTestCase(rs.getString("testcase").split(";")[0]);
+                regression.setTestCase(rs.getString("testcase"));
                 regressionList.add(regression);
             }
         } catch (Exception e) {
