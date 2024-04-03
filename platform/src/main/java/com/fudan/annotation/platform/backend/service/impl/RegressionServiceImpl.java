@@ -390,15 +390,14 @@ public class RegressionServiceImpl implements RegressionService {
 //        } catch (Exception e) {
 //            System.out.println(e.getMessage());
 //        }
-        if (command == null){
-            command = "mvn test -Dtest=" + testCase + " >> " + logFileName;
-        }else {
-            command = command + " >> " + logFileName;
+        if (command == null || command.trim().equals("")){
+            command = "mvn test -Dtest=" + testCase;
         }
+
         String finalCommand = command;
         new Thread(() -> {
             int state =
-                    new Executor().setDirectory(codeDir).exec(finalCommand, 1);
+                    new Executor().setDirectory(codeDir).exec(finalCommand, 1, new File(logPath));
 //            new Executor().setDirectory(codeDir).exec("mvn jacoco:report", 1);
             try {
                 String endFlag = "REGMINER-TEST-END";

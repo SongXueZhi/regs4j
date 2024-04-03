@@ -34,6 +34,44 @@ public class Executor {
         return this;
     }
 
+    public int exec(String cmd, int timeout, File outputFile) {
+        Process process = null;
+        InputStreamReader inputStr = null;
+        BufferedReader bufferReader = null;
+        pb.redirectOutput(outputFile); // Redirect output to file
+        pb.redirectError(outputFile); // Redirect error to file
+        try {
+            if (OS.contains(OS_WINDOWS)) {
+                pb.command("cmd.exe", "/c", cmd);
+            } else {
+                pb.command("bash", "-c", cmd);
+            }
+            process = pb.start();
+            if (timeout > 0) {
+                boolean completed = process.waitFor(timeout, TimeUnit.MINUTES);
+                if (!completed) {
+                    return -1;
+                }
+            }
+        } catch (IOException | InterruptedException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                if (process != null) {
+                    process.destroy();
+                }
+                if (inputStr != null) {
+                    IOUtils.close(inputStr);
+                }
+                if (bufferReader != null) {
+                    IOUtils.close(bufferReader);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    return 0;
+}
     public int exec(String cmd, int timeout) {
         Process process = null;
         InputStreamReader inputStr = null;
