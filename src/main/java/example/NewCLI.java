@@ -100,7 +100,7 @@ public class NewCLI {
             case "bic":
                 targetVersion = regression.getRic();
                 break;
-            case "work":
+            case "wc":
                 targetVersion = regression.getWork();
                 break;
             case "buggy":
